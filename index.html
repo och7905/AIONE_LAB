@@ -53,7 +53,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261029_12">
+  <link rel="stylesheet" href="css/style.css?v=20261029_31">
 </head>
 <body class="selection:bg-sky-500/30 selection:text-white">
 
@@ -1551,7 +1551,7 @@
   <!-- ======================================================================
        MODAL 3: APPLICATION ONLINE VIEWER (LAB LEADER DIRECT REVIEW MODE)
        ====================================================================== -->
-  <div id="applicant-viewer-modal" class="modal-backdrop">
+  <div id="applicant-viewer-modal" class="modal-backdrop !z-[1100]" style="z-index: 1100;">
     <div class="modal-content !max-w-4xl !w-[95vw] !max-h-[92vh] flex flex-col p-0 overflow-hidden bg-slate-900 border border-sky-500/30 shadow-2xl">
       <!-- Modal Header -->
       <div class="flex items-center justify-between px-6 py-4 bg-slate-800/90 border-b border-white/10 flex-shrink-0">
@@ -1598,7 +1598,7 @@
   <!-- ======================================================================
        MODAL 4: ADMIN PORTAL (APPLICANT MANAGEMENT & ON-DEMAND PDF DOWNLOAD)
        ====================================================================== -->
-  <div id="admin-portal-modal" class="modal-backdrop">
+  <div id="admin-portal-modal" class="modal-backdrop !z-[1050]" style="z-index: 1050;">
     <div class="modal-content !max-w-6xl !w-[96vw] !max-h-[92vh] flex flex-col p-0 overflow-hidden bg-slate-900 border border-sky-500/40 shadow-2xl">
       
       <!-- Modal Header -->
@@ -1740,6 +1740,10 @@
               <i class="fa-solid fa-file-csv text-xs text-emerald-400"></i>
               <span>CSV 내보내기</span>
             </button>
+            <button type="button" id="admin-delete-selected-btn" class="btn-glow-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5 !border-rose-500/50 !text-rose-300 hover:!bg-rose-500/20 shadow-sm hidden" title="선택한 지원서 일괄 삭제">
+              <i class="fa-solid fa-trash-can text-xs text-rose-400"></i>
+              <span>선택 삭제 (<strong id="admin-selected-count">0</strong>)</span>
+            </button>
             <button type="button" id="admin-logout-btn" class="btn-glow-secondary !py-1.5 !px-2.5 text-xs text-slate-400 hover:text-rose-400 hover:border-rose-500/40" title="로그아웃">
               <i class="fa-solid fa-right-from-bracket text-xs"></i>
             </button>
@@ -1754,7 +1758,10 @@
               <table class="min-w-full divide-y divide-white/10 text-xs text-left">
                 <thead class="bg-slate-800/80 text-slate-300 uppercase font-mono tracking-wider text-[11px]">
                   <tr>
-                    <th scope="col" class="py-3 px-3 text-center w-12">No.</th>
+                    <th scope="col" class="py-3 px-2 text-center w-10">
+                      <input type="checkbox" id="admin-select-all" class="form-checkbox rounded text-sky-500 cursor-pointer w-3.5 h-3.5 accent-sky-500" title="전체 선택">
+                    </th>
+                    <th scope="col" class="py-3 px-2 text-center w-10">No.</th>
                     <th scope="col" class="py-3 px-3">접수일시</th>
                     <th scope="col" class="py-3 px-3">성명</th>
                     <th scope="col" class="py-3 px-3">학번</th>
@@ -1802,7 +1809,7 @@
   <!-- ======================================================================
        MODAL 5: PASSWORD CHANGED SUCCESS POPUP
        ====================================================================== -->
-  <div id="password-changed-modal" class="modal-backdrop">
+  <div id="password-changed-modal" class="modal-backdrop !z-[1150]" style="z-index: 1150;">
     <div class="modal-content !max-w-md text-center p-6 sm:p-8 border border-emerald-500/40 shadow-2xl">
       <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg shadow-emerald-500/10">
         <i class="fa-solid fa-key"></i>
@@ -2029,9 +2036,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="js/canvas.js?v=20261029_29"></script>
-  <script src="js/main.js?v=20261029_29"></script>
-  <script src="js/form.js?v=20261029_29"></script>
+  <script src="js/canvas.js?v=20261029_32"></script>
+  <script src="js/main.js?v=20261029_32"></script>
+  <script src="js/form.js?v=20261029_32"></script>
 
 </body>
 </html>

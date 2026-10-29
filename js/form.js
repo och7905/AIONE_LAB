@@ -1336,6 +1336,111 @@
     if (exportCsvBtn) {
       exportCsvBtn.addEventListener('click', exportApplicantsToCSV);
     }
+
+    // Select All Checkbox
+    const selectAllCheckbox = document.getElementById('admin-select-all');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        const itemCheckboxes = document.querySelectorAll('.admin-select-item');
+        itemCheckboxes.forEach(cb => {
+          cb.checked = isChecked;
+        });
+        updateAdminSelectionState();
+      });
+    }
+
+    // Batch Delete Selected Button
+    const deleteSelectedBtn = document.getElementById('admin-delete-selected-btn');
+    if (deleteSelectedBtn) {
+      deleteSelectedBtn.addEventListener('click', async () => {
+        const checkedBoxes = Array.from(document.querySelectorAll('.admin-select-item:checked'));
+        if (checkedBoxes.length === 0) return;
+
+        const count = checkedBoxes.length;
+        const confirmMsg = `선택하신 ${count}명의 지원서를 일괄 삭제하시겠습니까?\n\n삭제된 지원서 내역은 복구할 수 없습니다.`;
+        if (!confirm(confirmMsg)) return;
+
+        deleteSelectedBtn.disabled = true;
+        deleteSelectedBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>삭제 중...</span>';
+
+        const targets = checkedBoxes.map(cb => ({
+          studentId: cb.getAttribute('data-student-id'),
+          name: cb.getAttribute('data-name')
+        }));
+        const targetIds = new Set(targets.map(t => String(t.studentId)));
+
+        // 1. Remove from local memory
+        adminApplicantsData = adminApplicantsData.filter(item => !targetIds.has(String(item.student_id)));
+
+        // 2. Remove from LocalStorage
+        try {
+          let localList = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY) || '[]');
+          localList = localList.filter(item => !targetIds.has(String(item.student_id)));
+          localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(localList));
+        } catch (_) {}
+
+        // 3. If GAS is connected, request deletion in Google Sheets
+        const gasUrl = getGasUrl();
+        const adminPw = sessionStorage.getItem('aione_admin_pw') || '';
+        if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
+          try {
+            await Promise.allSettled(
+              targets.map(t => {
+                const delUrl = `${gasUrl}?action=delete_applicant&student_id=${encodeURIComponent(t.studentId)}&name=${encodeURIComponent(t.name || '')}&pw=${encodeURIComponent(adminPw)}`;
+                return fetch(delUrl);
+              })
+            );
+          } catch (err) {
+            console.warn('GAS batch delete error:', err);
+          }
+        }
+
+        // 4. Update UI
+        deleteSelectedBtn.disabled = false;
+        deleteSelectedBtn.innerHTML = '<i class="fa-solid fa-trash-can text-xs text-rose-400"></i><span>선택 삭제 (<strong id="admin-selected-count">0</strong>)</span>';
+        renderApplicantTable();
+        window.showToast?.(`🗑️ 선택하신 ${count}명의 지원서가 성공적으로 삭제되었습니다.`);
+      });
+    }
+  }
+
+  function updateAdminSelectionState() {
+    const selectAllCheckbox = document.getElementById('admin-select-all');
+    const deleteSelectedBtn = document.getElementById('admin-delete-selected-btn');
+    const selectedCountSpan = document.getElementById('admin-selected-count');
+
+    const itemCheckboxes = document.querySelectorAll('.admin-select-item');
+    const checkedBoxes = document.querySelectorAll('.admin-select-item:checked');
+    const count = checkedBoxes.length;
+
+    if (selectedCountSpan) {
+      selectedCountSpan.textContent = count;
+    }
+
+    if (deleteSelectedBtn) {
+      if (count > 0) {
+        deleteSelectedBtn.classList.remove('hidden');
+      } else {
+        deleteSelectedBtn.classList.add('hidden');
+      }
+    }
+
+    if (selectAllCheckbox) {
+      if (itemCheckboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (count === itemCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+      } else if (count > 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+      } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      }
+    }
   }
 
   async function loadAdminApplicants(isManualRefresh = false) {
@@ -1468,6 +1573,7 @@
 
     if (filtered.length === 0) {
       emptyState?.classList.remove('hidden');
+      updateAdminSelectionState();
       return;
     }
 
@@ -1485,7 +1591,10 @@
         : 'bg-sky-500/15 text-sky-300 border-sky-500/30';
 
       tr.innerHTML = `
-        <td class="py-3 px-3 text-center text-slate-500 font-mono">${idx + 1}</td>
+        <td class="py-3 px-2 text-center">
+          <input type="checkbox" class="admin-select-item form-checkbox rounded text-sky-500 cursor-pointer w-3.5 h-3.5 accent-sky-500" data-student-id="${escapeHtml(app.student_id)}" data-name="${escapeHtml(app.name)}">
+        </td>
+        <td class="py-3 px-2 text-center text-slate-500 font-mono">${idx + 1}</td>
         <td class="py-3 px-3 whitespace-nowrap text-slate-400 font-mono text-[11px]">${escapeHtml(dateStr)}</td>
         <td class="py-3 px-3 whitespace-nowrap font-bold text-white">${escapeHtml(app.name || '-')}</td>
         <td class="py-3 px-3 whitespace-nowrap font-mono text-sky-400">${escapeHtml(app.student_id || '-')}</td>
@@ -1523,6 +1632,14 @@
           </div>
         </td>
       `;
+
+      // Checkbox listener
+      const itemCheckbox = tr.querySelector('.admin-select-item');
+      if (itemCheckbox) {
+        itemCheckbox.addEventListener('change', () => {
+          updateAdminSelectionState();
+        });
+      }
 
       // Bind Action Buttons
       const pdfBtn = tr.querySelector('.admin-act-pdf');
@@ -1601,6 +1718,8 @@
 
       tbody.appendChild(tr);
     });
+
+    updateAdminSelectionState();
   }
 
   function escapeHtml(str) {

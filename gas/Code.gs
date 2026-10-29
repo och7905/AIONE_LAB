@@ -234,7 +234,7 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 4. 관리자 특정 지원서 삭제
+  // 4. 관리자 특정 지원서 단일 또는 선택 일괄 삭제
   if (action === 'delete_applicant') {
     const enteredPw = (e.parameter.pw || '').trim();
     if (!verifyAdminPassword(enteredPw)) {
@@ -247,7 +247,16 @@ function doGet(e) {
     const targetStudentId = (e.parameter.student_id || '').trim();
     const targetName = (e.parameter.name || '').trim();
 
-    const deleted = deleteApplicantFromSheet(targetStudentId, targetName);
+    var deleted = false;
+    if (targetStudentId.indexOf(',') !== -1) {
+      var ids = targetStudentId.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      ids.forEach(function(id) {
+        if (deleteApplicantFromSheet(id, '')) deleted = true;
+      });
+    } else {
+      deleted = deleteApplicantFromSheet(targetStudentId, targetName);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       status: deleted ? 'success' : 'not_found',
       message: deleted ? '성공적으로 삭제되었습니다.' : '해당 지원자를 찾을 수 없습니다.'

@@ -232,9 +232,19 @@
     modal.classList.remove('active');
   }
 
-  // ESC key to close active modal
+  // ESC key to close active modal (top-most modal first)
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      const viewerModal = document.getElementById('applicant-viewer-modal');
+      const pwModal = document.getElementById('password-changed-modal');
+      if (viewerModal && viewerModal.classList.contains('active')) {
+        closeModal(viewerModal);
+        return;
+      }
+      if (pwModal && pwModal.classList.contains('active')) {
+        closeModal(pwModal);
+        return;
+      }
       modals.forEach(modal => {
         if (modal.classList.contains('active')) {
           closeModal(modal);

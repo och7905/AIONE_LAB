@@ -355,6 +355,19 @@ html.light .form-input:focus, html.light .form-textarea:focus, html.light .form-
   transform: scale(1) translateY(0);
 }
 
+/* Modal Stacking Hierarchy (뷰어 및 팝업이 관리자 포털 위로 올라오도록 보장) */
+#admin-portal-modal {
+  z-index: 1050 !important;
+}
+
+#applicant-viewer-modal {
+  z-index: 1100 !important;
+}
+
+#password-changed-modal {
+  z-index: 1150 !important;
+}
+
 /* Toast Notification */
 .toast-container {
   position: fixed;
