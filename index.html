@@ -168,14 +168,6 @@
             <i class="fa-solid fa-chevron-right text-[11px] opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
           </a>
 
-          <a href="#apply" class="side-nav-link group !text-sky-300 !bg-sky-500/10 !border-sky-500/25">
-            <span class="flex items-center gap-3 font-bold">
-              <i class="fa-solid fa-file-signature w-5 text-center text-sky-400 group-hover:scale-110 transition-transform"></i>
-              <span>2026 연구원 지원서 작성</span>
-            </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/20 text-sky-300 border border-sky-500/30">APPLY</span>
-          </a>
-
           <!-- Divider -->
           <div class="pt-4 pb-2">
             <span class="text-[10px] font-mono tracking-wider text-slate-500 px-3 uppercase block">Direct Channels</span>
@@ -207,6 +199,15 @@
             </span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
           </a>
+
+          <!-- Admin Portal Link (Option 1) -->
+          <button id="side-admin-portal-open-btn" type="button" class="side-nav-link !text-slate-300 hover:!text-sky-300 group w-full text-left">
+            <span class="flex items-center gap-3">
+              <i class="fa-solid fa-shield-halved w-5 text-center text-sky-400 group-hover:scale-110 transition-transform"></i>
+              <span>관리자 전용 포털</span>
+            </span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 border border-sky-500/30 text-sky-300">ADMIN</span>
+          </button>
         </nav>
 
         <!-- Drawer Footer Action -->
@@ -1461,9 +1462,14 @@
 
         <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-slate-400">
           <p>© 2026 AIONE LAB. All Rights Reserved. 대전광역시 동구 대학로 62 대전대학교 서문 방면 융합과학관 217호 &amp; 330호</p>
-          <p class="font-mono text-[11px]">
-            Lab Leader: <a href="mailto:och7905@naver.com" class="hover:text-sky-400 underline">och7905@naver.com</a> / 010-9347-7906 · 
-            <a href="https://open.kakao.com/o/gHO1VCMi" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:underline font-sans">문의 오픈채팅방 ↗</a>
+          <p class="font-mono text-[11px] flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <span>Lab Leader: <a href="mailto:och7905@naver.com" class="hover:text-sky-400 underline">och7905@naver.com</a> / 010-9347-7906 · 
+            <a href="https://open.kakao.com/o/gHO1VCMi" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:underline font-sans">문의 오픈채팅방 ↗</a></span>
+            <span class="text-slate-600 hidden sm:inline">|</span>
+            <button id="admin-portal-open-btn" type="button" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 hover:bg-sky-500/20 border border-white/10 hover:border-sky-400/40 text-slate-400 hover:text-sky-300 transition-all font-sans text-[11px] focus:outline-none" title="관리자 전용 포털 (단축키: Ctrl + Shift + A)">
+              <i class="fa-solid fa-shield-halved text-[10px] text-sky-400"></i>
+              <span>관리자 포털</span>
+            </button>
           </p>
         </div>
       </div>
@@ -1590,6 +1596,236 @@
           <!-- Live Cloned 2-Page Official Application Document -->
         </div>
       </div>
+    </div>
+  </div>
+
+
+  <!-- ======================================================================
+       MODAL 4: ADMIN PORTAL (APPLICANT MANAGEMENT & ON-DEMAND PDF DOWNLOAD)
+       ====================================================================== -->
+  <div id="admin-portal-modal" class="modal-backdrop">
+    <div class="modal-content !max-w-6xl !w-[96vw] !max-h-[92vh] flex flex-col p-0 overflow-hidden bg-slate-900 border border-sky-500/40 shadow-2xl">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 bg-slate-800/95 border-b border-white/10 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500/20 to-indigo-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 shadow-md">
+            <i class="fa-solid fa-shield-halved text-lg"></i>
+          </div>
+          <div>
+            <div class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <span>AIONE LAB 지원자 관리 포털</span>
+              <span id="admin-status-badge" class="px-2 py-0.5 text-[10px] font-mono rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">LAB ADMIN</span>
+            </div>
+            <p class="text-xs text-slate-400 hidden sm:block">
+              2026학년도 신규 연구원 지원 현황 실시간 조회 및 공식 2-Page PDF 원클릭 발급
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" id="admin-settings-toggle-btn" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-sky-300 flex items-center justify-center transition-colors hidden sm:flex" title="구글 스프레드시트 연동 설정">
+            <i class="fa-solid fa-gear text-sm"></i>
+          </button>
+          <button type="button" id="admin-close-btn" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: AUTHENTICATION (PASSWORD PROMPT) -->
+      <div id="admin-auth-view" class="p-8 sm:p-12 flex flex-col items-center justify-center text-center">
+        <div class="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-sky-500/10">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h3 class="text-xl sm:text-2xl font-bold text-white mb-2">연구실 관리자 인증</h3>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
+          지원자의 개인정보 보호 및 보안을 위해 관리자(랩장/지도교수) 비밀번호를 입력해주세요.
+        </p>
+
+        <form id="admin-auth-form" class="w-full max-w-sm space-y-4">
+          <div class="relative">
+            <input type="password" id="admin-password-input" class="form-input !pr-10 text-center tracking-widest text-base" placeholder="관리자 비밀번호 입력" required autocomplete="current-password">
+            <button type="button" id="admin-pw-toggle-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-400 focus:outline-none">
+              <i class="fa-regular fa-eye text-sm"></i>
+            </button>
+          </div>
+          <div id="admin-auth-error" class="text-xs text-rose-400 font-medium hidden">
+            비밀번호가 올바르지 않습니다. 다시 시도해주세요.
+          </div>
+          <button type="submit" id="admin-auth-submit-btn" class="btn-glow-primary w-full py-3 text-sm justify-center">
+            <span>관리자 대시보드 입장</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- VIEW 2: DASHBOARD (APPLICANT TABLE & ACTIONS) -->
+      <div id="admin-dashboard-view" class="flex-1 flex flex-col overflow-hidden hidden">
+        
+        <!-- Settings Panel (Collapsible) -->
+        <div id="admin-settings-panel" class="hidden px-6 py-4 bg-slate-950/95 border-b border-sky-500/20 text-xs text-slate-300 space-y-3">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex-1 w-full">
+              <label for="admin-gas-url-input" class="block text-[11px] font-semibold text-sky-400 mb-1">
+                <i class="fa-brands fa-google text-xs mr-1"></i>구글 앱스 스크립트(GAS) Web App URL 연동:
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="url" id="admin-gas-url-input" class="form-input !py-1.5 text-xs flex-1" placeholder="https://script.google.com/macros/s/.../exec">
+                <button type="button" id="admin-gas-url-save-btn" class="btn-glow-primary !py-1.5 !px-3 text-xs flex-shrink-0">
+                  <span>URL 저장</span>
+                </button>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 sm:max-w-xs leading-normal">
+              구글 시트에 배포된 웹앱 URL을 등록하면 실시간 양방향 동기화됩니다.
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-white/5">
+            <div class="flex-1 w-full">
+              <label for="admin-change-pw-input" class="block text-[11px] font-semibold text-sky-400 mb-1">
+                <i class="fa-solid fa-key text-xs mr-1"></i>관리자 비밀번호 변경 (웹사이트 접속용):
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="text" id="admin-change-pw-input" class="form-input !py-1.5 text-xs flex-1" placeholder="새로운 비밀번호 입력">
+                <button type="button" id="admin-change-pw-save-btn" class="btn-glow-primary !py-1.5 !px-3 text-xs flex-shrink-0 !from-amber-500 !to-indigo-500">
+                  <span>비밀번호 변경</span>
+                </button>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 sm:max-w-xs leading-normal">
+              웹사이트 접속 비밀번호를 즉시 변경합니다. (구글 시트 연동 시에는 스프레드시트 Apps Script 코드의 ADMIN_PASSWORD도 동일하게 설정해주세요)
+            </p>
+          </div>
+        </div>
+
+        <!-- Dashboard Top Toolbar -->
+        <div class="p-4 sm:p-5 bg-slate-900/90 border-b border-white/10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-shrink-0">
+          
+          <!-- Statistics Badges -->
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+            <div class="px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-slate-300 flex items-center gap-2">
+              <span class="text-slate-400">총 지원자:</span>
+              <strong id="admin-stat-total" class="text-sky-400 font-mono text-sm">0</strong>
+              <span class="text-slate-400">명</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-slate-300 flex items-center gap-2">
+              <span class="text-slate-400">학부연구생:</span>
+              <strong id="admin-stat-ug" class="text-emerald-400 font-mono text-sm">0</strong>
+              <span class="text-slate-400">명</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-slate-300 flex items-center gap-2">
+              <span class="text-slate-400">석사신입생:</span>
+              <strong id="admin-stat-grad" class="text-indigo-400 font-mono text-sm">0</strong>
+              <span class="text-slate-400">명</span>
+            </div>
+            <div id="admin-data-source-badge" class="px-2.5 py-1 rounded text-[11px] font-mono bg-white/5 border border-white/10 text-slate-400">
+              <i class="fa-solid fa-database text-[10px] mr-1 text-sky-400"></i>로컬 저장소
+            </div>
+          </div>
+
+          <!-- Actions: Search & Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 sm:w-60">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+              <input type="text" id="admin-search-input" class="form-input !pl-8 !py-1.5 text-xs w-full" placeholder="이름, 학번, 키워드 검색...">
+            </div>
+            <select id="admin-grade-filter" class="form-select !py-1.5 text-xs w-auto">
+              <option value="all">전체 구분</option>
+              <option value="undergrad">학부연구생 (전체)</option>
+              <option value="6기">학부연구생 6기 (예비 2학년)</option>
+              <option value="grad">석사과정</option>
+            </select>
+            <button type="button" id="admin-refresh-btn" class="btn-glow-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5" title="새로고침">
+              <i class="fa-solid fa-rotate-right text-xs"></i>
+              <span class="hidden sm:inline">새로고침</span>
+            </button>
+            <button type="button" id="admin-export-csv-btn" class="btn-glow-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5 !border-emerald-500/40 !text-emerald-300 hover:!bg-emerald-500/20" title="전체 명단 CSV 엑셀 다운로드">
+              <i class="fa-solid fa-file-csv text-xs text-emerald-400"></i>
+              <span>CSV 내보내기</span>
+            </button>
+            <button type="button" id="admin-logout-btn" class="btn-glow-secondary !py-1.5 !px-2.5 text-xs text-slate-400 hover:text-rose-400 hover:border-rose-500/40" title="로그아웃">
+              <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Table Container -->
+        <div class="flex-1 overflow-auto bg-slate-950/70 p-4">
+          <div class="min-w-full inline-block align-middle">
+            <div class="border border-white/10 rounded-xl overflow-hidden bg-slate-900/60 shadow-inner">
+              <table class="min-w-full divide-y divide-white/10 text-xs text-left">
+                <thead class="bg-slate-800/80 text-slate-300 uppercase font-mono tracking-wider text-[11px]">
+                  <tr>
+                    <th scope="col" class="py-3 px-3 text-center w-12">No.</th>
+                    <th scope="col" class="py-3 px-3">접수일시</th>
+                    <th scope="col" class="py-3 px-3">성명</th>
+                    <th scope="col" class="py-3 px-3">학번</th>
+                    <th scope="col" class="py-3 px-3">지원구분</th>
+                    <th scope="col" class="py-3 px-3">연락처</th>
+                    <th scope="col" class="py-3 px-4">나를 표현하는 단어</th>
+                    <th scope="col" class="py-3 px-3 text-center">지원서 관리 &amp; PDF</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-applicant-table-body" class="divide-y divide-white/5 text-slate-300">
+                  <!-- Dynamically Rendered Applicant Rows -->
+                </tbody>
+              </table>
+
+              <!-- Empty State -->
+              <div id="admin-empty-state" class="hidden p-12 text-center text-slate-400">
+                <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 text-slate-500 text-lg">
+                  <i class="fa-solid fa-inbox"></i>
+                </div>
+                <p class="text-sm font-semibold text-slate-300 mb-1">접수된 지원자가 없습니다.</p>
+                <p class="text-xs text-slate-500">새로운 지원서가 제출되면 이곳에 실시간으로 표시됩니다.</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Footer -->
+        <div class="px-6 py-3 bg-slate-900 border-t border-white/10 text-[11px] text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 flex-shrink-0">
+          <div>
+            <i class="fa-solid fa-circle-info text-sky-400 mr-1.5"></i>
+            <span>[📄 PDF 다운로드] 클릭 시 해당 지원자의 2-Page 공식 입실지원서가 즉시 생성되어 저장됩니다.</span>
+          </div>
+          <div class="font-mono text-slate-500 text-[10px]">
+            AIONE LAB ADMIN SYSTEM v2.0
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================================
+       MODAL 5: PASSWORD CHANGED SUCCESS POPUP
+       ====================================================================== -->
+  <div id="password-changed-modal" class="modal-backdrop">
+    <div class="modal-content !max-w-md text-center p-6 sm:p-8 border border-emerald-500/40 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg shadow-emerald-500/10">
+        <i class="fa-solid fa-key"></i>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">비밀번호 변경 완료</h3>
+      <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+        관리자 포털 접속 비밀번호가 성공적으로 변경되었습니다.
+      </p>
+      <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-sky-300 mb-5 flex items-center justify-center gap-2">
+        <span class="text-slate-400">새 비밀번호:</span>
+        <strong id="pw-changed-modal-val" class="text-sm font-bold text-amber-400 tracking-wider">aione2026!</strong>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-6">
+        다음 로그인부터는 변경하신 새 비밀번호로 접속해 주시기 바랍니다.
+      </p>
+      <button type="button" id="pw-changed-modal-close-btn" class="btn-glow-primary w-full py-2.5 text-xs justify-center modal-close-btn">
+        확인
+      </button>
     </div>
   </div>
 
@@ -1798,9 +2034,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="js/canvas.js?v=20261029_19"></script>
-  <script src="js/main.js?v=20261029_19"></script>
-  <script src="js/form.js?v=20261029_19"></script>
+  <script src="js/canvas.js?v=20261029_24"></script>
+  <script src="js/main.js?v=20261029_24"></script>
+  <script src="js/form.js?v=20261029_24"></script>
 
 </body>
 </html>

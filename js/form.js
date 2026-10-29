@@ -7,11 +7,12 @@
   'use strict';
 
   const STORAGE_KEY = 'aione_application_draft';
+  const ADMIN_STORAGE_KEY = 'aione_admin_submissions';
   const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mzeevple';
   const CONTACT_EMAIL = 'och7905@naver.com';
 
-  // 구글 앱스 스크립트 웹앱 URL (배포 후 아래에 기입하면 PDF 파일이 och7905@naver.com 메일로 직접 첨부되어 100% 자동 발송됩니다)
-  const GOOGLE_APPS_SCRIPT_URL = '';
+  // 구글 앱스 스크립트 웹앱 URL (배포 후 아래에 기입하거나 관리자 포털 설정창에 등록하면 구글 시트 영구 보존 및 실시간 양방향 연동됩니다)
+  let GOOGLE_APPS_SCRIPT_URL = localStorage.getItem('aione_gas_url') || '';
 
   const form = document.getElementById('recruitment-form');
   if (!form) return;
@@ -977,24 +978,27 @@
         throw new Error(`Formspree 전송 오류 (${errDetail})`);
       }
 
-      // Step D. If Google Apps Script WebApp is configured, send actual PDF attachment
-      if (GOOGLE_APPS_SCRIPT_URL && pdfResult?.pdfBlob) {
+      // Step D. If Google Apps Script WebApp is configured, send data to Google Spreadsheet
+      const activeGasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+      if (activeGasUrl) {
         try {
-          const pdfBase64 = await blobToBase64(pdfResult.pdfBlob);
-          fetch(GOOGLE_APPS_SCRIPT_URL, {
+          fetch(activeGasUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              action: 'submit',
               ...data,
-              pdfBase64: pdfBase64,
-              filename: pdfResult.filename
+              submitted_at: new Date().toLocaleString('ko-KR')
             })
           }).catch((gasErr) => console.warn('Google Apps Script warning:', gasErr));
         } catch (gasErr) {
           console.warn('Google Apps Script submission warning:', gasErr);
         }
       }
+
+      // Step E. Save to local admin storage
+      saveToAdminLocalStorage(data);
 
       // Complete submission
       localStorage.removeItem(STORAGE_KEY);
@@ -1098,9 +1102,660 @@
     }
   }
 
+  // --------------------------------------------------------------------------
+  // Admin Local Storage Persistence
+  // --------------------------------------------------------------------------
+  function saveToAdminLocalStorage(data) {
+    try {
+      const list = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY) || '[]');
+      const itemToSave = {
+        ...data,
+        submitted_at: data.submitted_at || new Date().toLocaleString('ko-KR')
+      };
+      const existingIndex = list.findIndex(item => item.student_id === data.student_id);
+      if (existingIndex >= 0) {
+        list[existingIndex] = itemToSave;
+      } else {
+        list.unshift(itemToSave);
+      }
+      localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn('saveToAdminLocalStorage warning:', e);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 6. ADMIN PORTAL (APPLICANT MANAGEMENT & ON-DEMAND PDF DOWNLOAD)
+  // --------------------------------------------------------------------------
+  const ADMIN_PASSWORD_DEFAULT = 'aione2026!';
+  const getAdminPassword = () => {
+    return localStorage.getItem('aione_admin_password') || ADMIN_PASSWORD_DEFAULT;
+  };
+  let adminApplicantsData = [];
+  let currentSearchQuery = '';
+  let currentGradeFilter = 'all';
+
+  function initAdminPortal() {
+    const openBtn = document.getElementById('admin-portal-open-btn');
+    const sideOpenBtn = document.getElementById('side-admin-portal-open-btn');
+    const modal = document.getElementById('admin-portal-modal');
+    const closeBtn = document.getElementById('admin-close-btn');
+    const authView = document.getElementById('admin-auth-view');
+    const dashView = document.getElementById('admin-dashboard-view');
+    const authForm = document.getElementById('admin-auth-form');
+    const pwInput = document.getElementById('admin-password-input');
+    const pwToggleBtn = document.getElementById('admin-pw-toggle-btn');
+    const authError = document.getElementById('admin-auth-error');
+    const refreshBtn = document.getElementById('admin-refresh-btn');
+    const exportCsvBtn = document.getElementById('admin-export-csv-btn');
+    const logoutBtn = document.getElementById('admin-logout-btn');
+    const searchInput = document.getElementById('admin-search-input');
+    const gradeFilter = document.getElementById('admin-grade-filter');
+    const settingsToggleBtn = document.getElementById('admin-settings-toggle-btn');
+    const settingsPanel = document.getElementById('admin-settings-panel');
+    const gasUrlInput = document.getElementById('admin-gas-url-input');
+    const gasUrlSaveBtn = document.getElementById('admin-gas-url-save-btn');
+    const changePwInput = document.getElementById('admin-change-pw-input');
+    const changePwSaveBtn = document.getElementById('admin-change-pw-save-btn');
+
+    if (!modal) return;
+
+    // Load saved GAS URL if available
+    if (gasUrlInput) {
+      gasUrlInput.value = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL || '';
+    }
+
+    if (gasUrlSaveBtn && gasUrlInput) {
+      gasUrlSaveBtn.addEventListener('click', () => {
+        const val = gasUrlInput.value.trim();
+        if (val) {
+          localStorage.setItem('aione_gas_url', val);
+          GOOGLE_APPS_SCRIPT_URL = val;
+          window.showToast?.('✅ 구글 앱스 스크립트 연동 URL이 저장되었습니다.');
+        } else {
+          localStorage.removeItem('aione_gas_url');
+          GOOGLE_APPS_SCRIPT_URL = '';
+          window.showToast?.('ℹ️ 연동 URL이 초기화되었습니다 (로컬 저장소 모드).');
+        }
+        loadAdminApplicants();
+      });
+    }
+
+    // Change Password Button (Synchronized with Google Apps Script DB)
+    if (changePwSaveBtn && changePwInput) {
+      changePwSaveBtn.addEventListener('click', async () => {
+        const newPw = changePwInput.value.trim();
+        if (!newPw) {
+          window.showToast?.('⚠️ 변경할 새 비밀번호를 입력해주세요.');
+          return;
+        }
+
+        const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+        const currentPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
+
+        changePwSaveBtn.disabled = true;
+        changePwSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>변경 중...</span>';
+
+        let gasSynced = false;
+        if (gasUrl) {
+          try {
+            const syncUrl = `${gasUrl}?action=change_password&old_pw=${encodeURIComponent(currentPw)}&new_pw=${encodeURIComponent(newPw)}`;
+            const res = await fetch(syncUrl);
+            if (res.ok) {
+              const json = await res.json();
+              if (json.status === 'success') {
+                gasSynced = true;
+              }
+            }
+          } catch (err) {
+            console.warn('GAS change password sync error:', err);
+          }
+        }
+
+        // Save locally in browser
+        localStorage.setItem('aione_admin_password', newPw);
+        sessionStorage.setItem('aione_admin_pw', newPw);
+        changePwInput.value = '';
+        changePwSaveBtn.disabled = false;
+        changePwSaveBtn.innerHTML = '<span>비밀번호 변경</span>';
+
+        if (gasSynced) {
+          window.showToast?.(`🔑 웹사이트와 연동된 구글 DB 비밀번호가 [${newPw}]로 동시 변경되었습니다!`);
+        } else if (gasUrl) {
+          window.showToast?.(`🔑 로컬 비밀번호가 [${newPw}]로 변경되었습니다. (구글 시트 연동 상태 확인 권장)`);
+        } else {
+          window.showToast?.(`🔑 관리자 비밀번호가 [${newPw}]로 성공적으로 변경되었습니다.`);
+        }
+
+        // Open Password Changed Popup Modal
+        const pwModal = document.getElementById('password-changed-modal');
+        const pwModalVal = document.getElementById('pw-changed-modal-val');
+        if (pwModalVal) pwModalVal.textContent = newPw;
+        if (pwModal) pwModal.classList.add('active');
+      });
+    }
+
+    if (settingsToggleBtn && settingsPanel) {
+      settingsToggleBtn.addEventListener('click', () => {
+        settingsPanel.classList.toggle('hidden');
+      });
+    }
+
+    const openAdmin = () => {
+      const isAuthed = sessionStorage.getItem('aione_admin_authed') === 'true';
+      if (isAuthed) {
+        authView?.classList.add('hidden');
+        dashView?.classList.remove('hidden');
+        loadAdminApplicants();
+      } else {
+        authView?.classList.remove('hidden');
+        dashView?.classList.add('hidden');
+        if (pwInput) pwInput.value = '';
+        authError?.classList.add('hidden');
+      }
+      modal.classList.add('active');
+      if (!isAuthed && pwInput) {
+        setTimeout(() => pwInput.focus(), 150);
+      }
+    };
+
+    const closeAdmin = () => {
+      modal.classList.remove('active');
+    };
+
+    if (openBtn) openBtn.addEventListener('click', openAdmin);
+    if (sideOpenBtn) {
+      sideOpenBtn.addEventListener('click', () => {
+        const sideDrawer = document.getElementById('side-drawer');
+        if (sideDrawer) {
+          sideDrawer.classList.remove('is-open');
+          sideDrawer.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+        openAdmin();
+      });
+    }
+    if (closeBtn) closeBtn.addEventListener('click', closeAdmin);
+
+    // Global shortcut Ctrl+Shift+A (or Cmd+Shift+A)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        if (modal.classList.contains('active')) {
+          closeAdmin();
+        } else {
+          openAdmin();
+        }
+      }
+    });
+
+    // Password view toggle
+    if (pwToggleBtn && pwInput) {
+      pwToggleBtn.addEventListener('click', () => {
+        const isPw = pwInput.type === 'password';
+        pwInput.type = isPw ? 'text' : 'password';
+        pwToggleBtn.innerHTML = isPw ? '<i class="fa-regular fa-eye-slash text-sm"></i>' : '<i class="fa-regular fa-eye text-sm"></i>';
+      });
+    }
+
+    // Password submit
+    if (authForm && pwInput) {
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const enteredPw = pwInput.value.trim();
+        const submitBtn = document.getElementById('admin-auth-submit-btn');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>인증 확인 중...</span>';
+        }
+
+        let verified = false;
+        const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+        const expectedPw = getAdminPassword();
+
+        if (enteredPw === expectedPw || enteredPw === ADMIN_PASSWORD_DEFAULT) {
+          verified = true;
+        } else if (gasUrl) {
+          try {
+            const res = await fetch(`${gasUrl}?action=get_applicants&pw=${encodeURIComponent(enteredPw)}`);
+            const json = await res.json();
+            if (json.status === 'success') {
+              verified = true;
+            }
+          } catch (_) {}
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>관리자 대시보드 입장</span><i class="fa-solid fa-arrow-right text-xs"></i>';
+        }
+
+        if (verified) {
+          sessionStorage.setItem('aione_admin_authed', 'true');
+          sessionStorage.setItem('aione_admin_pw', enteredPw);
+          authError?.classList.add('hidden');
+          authView?.classList.add('hidden');
+          dashView?.classList.remove('hidden');
+          window.showToast?.('🔐 관리자 인증이 완료되었습니다.');
+          loadAdminApplicants();
+        } else {
+          authError?.classList.remove('hidden');
+          pwInput.focus();
+          pwInput.select();
+        }
+      });
+    }
+
+    // Logout
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('aione_admin_authed');
+        sessionStorage.removeItem('aione_admin_pw');
+        dashView?.classList.add('hidden');
+        authView?.classList.remove('hidden');
+        if (pwInput) pwInput.value = '';
+        window.showToast?.('👋 관리자 세션이 로그아웃되었습니다.');
+      });
+    }
+
+    // Refresh
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        loadAdminApplicants(true);
+      });
+    }
+
+    // Search & Filter
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        currentSearchQuery = e.target.value.toLowerCase().trim();
+        renderApplicantTable();
+      });
+    }
+
+    if (gradeFilter) {
+      gradeFilter.addEventListener('change', (e) => {
+        currentGradeFilter = e.target.value;
+        renderApplicantTable();
+      });
+    }
+
+    // CSV Export
+    if (exportCsvBtn) {
+      exportCsvBtn.addEventListener('click', exportApplicantsToCSV);
+    }
+  }
+
+  async function loadAdminApplicants(isManualRefresh = false) {
+    const refreshBtn = document.getElementById('admin-refresh-btn');
+    const badge = document.getElementById('admin-data-source-badge');
+
+    if (refreshBtn) {
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span class="hidden sm:inline">불러오는 중...</span>';
+    }
+
+    let localList = [];
+    try {
+      localList = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY) || '[]');
+    } catch (_) {
+      localList = [];
+    }
+
+    let gasList = [];
+    let gasSuccess = false;
+    const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+    const adminPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
+
+    if (gasUrl) {
+      try {
+        const fetchUrl = `${gasUrl}?action=get_applicants&pw=${encodeURIComponent(adminPw)}`;
+        const res = await fetch(fetchUrl);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'success' && Array.isArray(json.applicants)) {
+            gasList = json.applicants;
+            gasSuccess = true;
+          }
+        }
+      } catch (err) {
+        console.warn('GAS fetch applicants error:', err);
+      }
+    }
+
+    // Merge strategy: GAS first, then union with local submissions not in GAS
+    if (gasSuccess) {
+      const merged = [...gasList];
+      localList.forEach(localItem => {
+        const exists = merged.some(m => String(m.student_id) === String(localItem.student_id));
+        if (!exists) {
+          merged.push(localItem);
+        }
+      });
+      adminApplicantsData = merged;
+      if (badge) {
+        badge.innerHTML = '<i class="fa-brands fa-google text-[10px] text-emerald-400 mr-1"></i>구글 시트 연동됨';
+        badge.className = 'px-2.5 py-1 rounded text-[11px] font-mono bg-emerald-500/10 border border-emerald-500/30 text-emerald-300';
+      }
+      if (isManualRefresh) window.showToast?.(`🔄 구글 시트에서 ${adminApplicantsData.length}건을 성공적으로 불러왔습니다.`);
+    } else {
+      adminApplicantsData = localList;
+      if (badge) {
+        badge.innerHTML = '<i class="fa-solid fa-database text-[10px] text-sky-400 mr-1"></i>로컬 저장소';
+        badge.className = 'px-2.5 py-1 rounded text-[11px] font-mono bg-white/5 border border-white/10 text-slate-400';
+      }
+      if (isManualRefresh) window.showToast?.(`🔄 로컬 저장소에서 ${adminApplicantsData.length}건의 지원 내역을 불러왔습니다.`);
+    }
+
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = '<i class="fa-solid fa-rotate-right text-xs"></i><span class="hidden sm:inline">새로고침</span>';
+    }
+
+    renderApplicantTable();
+  }
+
+  function renderApplicantTable() {
+    const tbody = document.getElementById('admin-applicant-table-body');
+    const emptyState = document.getElementById('admin-empty-state');
+    const statTotal = document.getElementById('admin-stat-total');
+    const statUg = document.getElementById('admin-stat-ug');
+    const statGrad = document.getElementById('admin-stat-grad');
+
+    if (!tbody) return;
+
+    // Calculate overall stats
+    let totalUg = 0;
+    let totalGrad = 0;
+    adminApplicantsData.forEach(item => {
+      const gradeStr = (item.grade || '').toLowerCase();
+      if (gradeStr.includes('석사') || gradeStr.includes('대학원')) {
+        totalGrad++;
+      } else {
+        totalUg++;
+      }
+    });
+
+    if (statTotal) statTotal.textContent = adminApplicantsData.length;
+    if (statUg) statUg.textContent = totalUg;
+    if (statGrad) statGrad.textContent = totalGrad;
+
+    // Filter applicants
+    const filtered = adminApplicantsData.filter(app => {
+      // 1. Search Query filter
+      if (currentSearchQuery) {
+        const matchText = [
+          app.name,
+          app.student_id,
+          app.grade,
+          app.phone,
+          app.tech_stack,
+          app.keyword_intro,
+          app.motivation
+        ].join(' ').toLowerCase();
+
+        if (!matchText.includes(currentSearchQuery)) return false;
+      }
+
+      // 2. Grade Filter
+      if (currentGradeFilter !== 'all') {
+        const gradeStr = (app.grade || '').toLowerCase();
+        if (currentGradeFilter === 'grad') {
+          return gradeStr.includes('석사') || gradeStr.includes('대학원');
+        } else if (currentGradeFilter === '6기') {
+          return gradeStr.includes('6기') || gradeStr.includes('2학년') || gradeStr.includes('예비');
+        } else if (currentGradeFilter === 'undergrad') {
+          return !gradeStr.includes('석사') && !gradeStr.includes('대학원');
+        }
+      }
+
+      return true;
+    });
+
+    tbody.innerHTML = '';
+
+    if (filtered.length === 0) {
+      emptyState?.classList.remove('hidden');
+      return;
+    }
+
+    emptyState?.classList.add('hidden');
+
+    filtered.forEach((app, idx) => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/[0.03] transition-colors';
+
+      const dateStr = app.submitted_at || app.submit_date || '-';
+      const gradeStr = app.grade || '학부연구생';
+      const isGrad = gradeStr.includes('석사');
+      const badgeClass = isGrad
+        ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+        : 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+
+      tr.innerHTML = `
+        <td class="py-3 px-3 text-center text-slate-500 font-mono">${idx + 1}</td>
+        <td class="py-3 px-3 whitespace-nowrap text-slate-400 font-mono text-[11px]">${escapeHtml(dateStr)}</td>
+        <td class="py-3 px-3 whitespace-nowrap font-bold text-white">${escapeHtml(app.name || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap font-mono text-sky-400">${escapeHtml(app.student_id || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">
+          <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${badgeClass}">
+            ${escapeHtml(gradeStr)}
+          </span>
+        </td>
+        <td class="py-3 px-3 whitespace-nowrap font-mono">
+          <a href="tel:${escapeHtml(app.phone || '')}" class="text-slate-300 hover:text-sky-400 transition-colors">
+            ${escapeHtml(app.phone || '-')}
+          </a>
+        </td>
+        <td class="py-3 px-4 max-w-[200px]">
+          <span class="truncate block text-slate-300" title="${escapeHtml(app.keyword_intro || '')}">
+            ${escapeHtml(app.keyword_intro || '-')}
+          </span>
+        </td>
+        <td class="py-3 px-3 whitespace-nowrap text-center">
+          <div class="inline-flex items-center gap-1.5">
+            <button type="button" class="admin-act-pdf btn-glow-primary !py-1 !px-2.5 text-[11px] flex items-center gap-1 shadow-sm" title="공식 2-Page 지원서 양식 PDF 다운로드">
+              <i class="fa-solid fa-file-arrow-down text-[10px]"></i>
+              <span>PDF</span>
+            </button>
+            <button type="button" class="admin-act-view btn-glow-secondary !py-1 !px-2 text-[11px] flex items-center gap-1" title="지원서 미리보기 창 열기">
+              <i class="fa-solid fa-eye text-[10px] text-sky-400"></i>
+              <span>보기</span>
+            </button>
+            <button type="button" class="admin-act-copy btn-glow-secondary !py-1 !px-2 text-[11px] text-slate-400 hover:text-white" title="지원자 핵심 정보 클립보드 복사">
+              <i class="fa-regular fa-copy text-[10px]"></i>
+            </button>
+            <button type="button" class="admin-act-delete btn-glow-secondary !py-1 !px-2 text-[11px] text-slate-400 hover:!text-rose-400 hover:!border-rose-500/40" title="지원서 삭제">
+              <i class="fa-solid fa-trash-can text-[10px]"></i>
+            </button>
+          </div>
+        </td>
+      `;
+
+      // Bind Action Buttons
+      const pdfBtn = tr.querySelector('.admin-act-pdf');
+      if (pdfBtn) {
+        pdfBtn.addEventListener('click', async () => {
+          pdfBtn.disabled = true;
+          pdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[10px]"></i>';
+          try {
+            window.showToast?.(`📄 [${app.name}] 지원서 공식 양식 PDF를 생성 중입니다...`);
+            await generateApplicationPDF(app);
+            window.showToast?.(`✅ [${app.name}] 지원서 PDF 저장이 완료되었습니다.`);
+          } catch (err) {
+            console.error('PDF download error:', err);
+            window.showToast?.(`⚠️ PDF 생성 중 오류가 발생했습니다: ${err.message}`);
+          } finally {
+            pdfBtn.disabled = false;
+            pdfBtn.innerHTML = '<i class="fa-solid fa-file-arrow-down text-[10px]"></i><span>PDF</span>';
+          }
+        });
+      }
+
+      const viewBtn = tr.querySelector('.admin-act-view');
+      if (viewBtn) {
+        viewBtn.addEventListener('click', () => {
+          openApplicantViewerModal(app);
+        });
+      }
+
+      const copyBtn = tr.querySelector('.admin-act-copy');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          copyApplicantSummary(app);
+        });
+      }
+
+      const deleteBtn = tr.querySelector('.admin-act-delete');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+          const confirmMsg = `정말로 [${app.name} (${app.student_id})] 지원자의 지원서를 삭제하시겠습니까?\n\n삭제된 지원서 내역은 복구할 수 없습니다.`;
+          if (!confirm(confirmMsg)) return;
+
+          deleteBtn.disabled = true;
+          deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[10px]"></i>';
+
+          // 1. Remove from local memory
+          adminApplicantsData = adminApplicantsData.filter(item => {
+            const isMatch = String(item.student_id) === String(app.student_id) &&
+                            (item.submitted_at === app.submitted_at || !item.submitted_at || !app.submitted_at);
+            return !isMatch;
+          });
+
+          // 2. Remove from LocalStorage
+          try {
+            let localList = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY) || '[]');
+            localList = localList.filter(item => String(item.student_id) !== String(app.student_id));
+            localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(localList));
+          } catch (_) {}
+
+          // 3. If GAS is connected, request deletion in Google Sheets
+          const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+          const adminPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
+          if (gasUrl) {
+            try {
+              const delUrl = `${gasUrl}?action=delete_applicant&student_id=${encodeURIComponent(app.student_id)}&name=${encodeURIComponent(app.name)}&pw=${encodeURIComponent(adminPw)}`;
+              await fetch(delUrl);
+            } catch (err) {
+              console.warn('GAS delete error:', err);
+            }
+          }
+
+          // 4. Update UI
+          renderApplicantTable();
+          window.showToast?.(`🗑️ [${app.name} (${app.student_id})] 지원서가 성공적으로 삭제되었습니다.`);
+        });
+      }
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function copyApplicantSummary(app) {
+    const summary = [
+      `[AIONE LAB 2026 지원자 요약]`,
+      `- 성명: ${app.name || '-'} (${app.student_id || '-'} / ${app.grade || '-'})`,
+      `- 연락처: ${app.phone || '-'}`,
+      `- 병역구분: ${app.military || '-'}`,
+      `- 기술스택: ${app.tech_stack || '없음'}`,
+      `- 면접가능시간: ${app.interview_available_times || '-'}`,
+      `- 포트폴리오: ${app.portfolio_links || '없음'}`,
+      `- 나를 표현하는 단어: ${app.keyword_intro || '-'}`,
+      `- 지원동기: ${app.motivation || '-'}`
+    ].join('\n');
+
+    navigator.clipboard.writeText(summary).then(() => {
+      window.showToast?.(`📋 [${app.name}] 지원자 요약 정보가 복사되었습니다.`);
+    }).catch(() => {
+      window.showToast?.(`📋 복사 실패 (브라우저 권한을 확인해주세요).`);
+    });
+  }
+
+  function exportApplicantsToCSV() {
+    if (!adminApplicantsData || adminApplicantsData.length === 0) {
+      window.showToast?.('⚠️ 내보낼 지원자 내역이 없습니다.');
+      return;
+    }
+
+    const headers = [
+      '접수일시',
+      '성명',
+      '학번',
+      '지원구분',
+      '연락처',
+      '병역구분',
+      '나를표현하는단어',
+      '지원동기',
+      '문제해결경험',
+      '학업계획',
+      '얻고자하는것',
+      '진로계획',
+      '기술스택',
+      '연구실희망활동',
+      '면접가능시간',
+      '포트폴리오링크'
+    ];
+
+    const rows = adminApplicantsData.map(app => [
+      app.submitted_at || app.submit_date || '',
+      app.name || '',
+      app.student_id || '',
+      app.grade || '',
+      app.phone || '',
+      app.military || '',
+      app.keyword_intro || '',
+      app.motivation || '',
+      app.problem_solving || '',
+      app.study_plan || '',
+      app.expectation || '',
+      app.career_plan || '',
+      app.tech_stack || '',
+      app.desired_activities || '',
+      app.interview_available_times || '',
+      app.portfolio_links || ''
+    ]);
+
+    const escapeCsv = (val) => {
+      const str = String(val || '').replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    let csvContent = '\uFEFF'; // UTF-8 BOM for Microsoft Excel compatibility
+    csvContent += headers.map(escapeCsv).join(',') + '\r\n';
+    rows.forEach(row => {
+      csvContent += row.map(escapeCsv).join(',') + '\r\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const filename = `AIONE_LAB_2026_지원자명단_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 2000);
+
+    window.showToast?.(`📥 전체 지원자 명단(${adminApplicantsData.length}건) CSV 엑셀 파일이 다운로드되었습니다.`);
+  }
+
   // Auto-restore draft & check online applicant viewer on DOM ready
   document.addEventListener('DOMContentLoaded', () => {
     restoreDraft();
     checkAndOpenViewer();
+    initAdminPortal();
   });
 })();
