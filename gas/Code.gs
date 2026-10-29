@@ -494,7 +494,7 @@ function buildApplicationHtml(data) {
         <td style="vertical-align: middle;">
           <div class="lab-sub">DAEJEON UNIVERSITY · DEPT OF COMPUTER ENGINEERING</div>
           <div class="page-title">AIONE LAB 2026학년도 신규 연구원 입실 지원서</div>
-          <div style="font-size: 9.5px; color: #64748b;">학부연구생 6기(예비 2학년) 및 석사과정 연구원 선발</div>
+          <div style="font-size: 9.5px; color: #64748b;">학부연구생 및 석사과정 연구원 선발</div>
         </td>
         <td style="text-align: right; vertical-align: middle;">
           <div class="badge">공식 접수 지원서</div>
@@ -686,25 +686,6 @@ function appendApplicantToSheet(item) {
   } catch (err) {
     Logger.log('Spreadsheet appendRow warning: ' + err);
   }
-}
-
-/**
- * 구글 스프레드시트 열림 이벤트 핸들러 (커스텀 메뉴 추가)
- */
-function onOpen() {
-  try {
-    const ui = SpreadsheetApp.getUi();
-    ui.createMenu('📁 AIONE 연구실')
-      .addItem('🔄 드라이브 PDF와 시트 실시간 동기화 (삭제된 지원자 자동 정리)', 'syncDriveAndSheetWithToast')
-      .addToUi();
-  } catch (_) {}
-}
-
-function syncDriveAndSheetWithToast() {
-  syncDriveAndSheet();
-  try {
-    SpreadsheetApp.getActiveSpreadsheet().toast('구글 드라이브의 실제 PDF 파일 상태와 동기화가 완료되었습니다.', '동기화 완료', 3);
-  } catch (_) {}
 }
 
 /**

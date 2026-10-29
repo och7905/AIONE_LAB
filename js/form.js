@@ -634,71 +634,8 @@
   }
 
   // --------------------------------------------------------------------------
-  // Applicant Data Encoding & Online Viewing Link Generation (URL-Safe)
+  // Applicant Data Decoding (URL-Safe)
   // --------------------------------------------------------------------------
-  async function createApplicantViewerLink(data) {
-    try {
-      const compact = {
-        n: data.name || '',
-        i: data.student_id || '',
-        g: data.grade || '',
-        p: data.phone || '',
-        m: data.military || '',
-        t: data.tech_stack || '',
-        a: data.desired_activities || '',
-        v: data.interview_available_times || '',
-        l: data.portfolio_links || '',
-        k: data.keyword_intro || '',
-        o: data.motivation || '',
-        s: data.problem_solving || '',
-        u: data.study_plan || '',
-        e: data.expectation || '',
-        c: data.career_plan || '',
-        d: new Date().toLocaleString('ko-KR')
-      };
-
-      const jsonStr = JSON.stringify(compact);
-      let encodedPayload = '';
-
-      // Try modern CompressionStream (deflate) to compress down to ~400-600 bytes
-      if (typeof CompressionStream !== 'undefined') {
-        try {
-          const stream = new Blob([jsonStr]).stream().pipeThrough(new CompressionStream('deflate'));
-          const buffer = await new Response(stream).arrayBuffer();
-          const bytes = new Uint8Array(buffer);
-          let binary = '';
-          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-          encodedPayload = 'z_' + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        } catch (_) {}
-      }
-
-      // Fallback to standard Base64 if CompressionStream is not available
-      if (!encodedPayload) {
-        const utf8Bytes = new TextEncoder().encode(jsonStr);
-        let binary = '';
-        for (let idx = 0; idx < utf8Bytes.length; idx++) {
-          binary += String.fromCharCode(utf8Bytes[idx]);
-        }
-        encodedPayload = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      }
-
-      // Determine robust base URL (fallback to official GitHub Pages URL if testing on local file)
-      let baseUrl = 'https://och7905.github.io/AIONE_LAB/';
-      if (window.location.protocol.startsWith('http') && !window.location.hostname.includes('localhost')) {
-        baseUrl = window.location.origin + window.location.pathname;
-        baseUrl = baseUrl.split('?')[0].split('#')[0];
-        if (!baseUrl.endsWith('/') && !baseUrl.endsWith('.html')) {
-          baseUrl += '/';
-        }
-      }
-
-      return `${baseUrl}?view_app=${encodedPayload}`;
-    } catch (err) {
-      console.error('Failed to create viewer link:', err);
-      return `https://och7905.github.io/AIONE_LAB/?applicant=${encodeURIComponent(data.name)}`;
-    }
-  }
-
   async function decodeApplicantData(raw) {
     try {
       if (!raw) return null;
@@ -965,7 +902,6 @@
 
       // 5. 임시 저장 데이터 정리 및 폼 초기화
       localStorage.removeItem(STORAGE_KEY);
-      downloadBackupJSON(data);
       form.reset();
       charLimitFields.forEach(({ limit, counterId }) => {
         const counter = document.getElementById(counterId);
@@ -1555,8 +1491,6 @@
         const gradeStr = (app.grade || '').toLowerCase();
         if (currentGradeFilter === 'grad') {
           return gradeStr.includes('석사') || gradeStr.includes('대학원');
-        } else if (currentGradeFilter === '6기') {
-          return gradeStr.includes('6기') || gradeStr.includes('2학년') || gradeStr.includes('예비');
         } else if (currentGradeFilter === 'undergrad') {
           return !gradeStr.includes('석사') && !gradeStr.includes('대학원');
         }
