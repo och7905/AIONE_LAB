@@ -22,10 +22,15 @@ const NOTIFICATION_EMAILS = [
 ];
 const NOTIFICATION_EMAIL = NOTIFICATION_EMAILS; // 하위 호환성 유지 변수
 
-// 3. 관리자 기본 비밀번호 SHA-256 단방향 암호화 해시 목록 (aione217! 및 aione217@ 지원, 복호화 불가)
+// 3. 관리자 기본 비밀번호 SHA-256 단방향 암호화 해시 목록 (복호화 불가 단방향 보안 해시)
 const DEFAULT_ADMIN_PASSWORD_HASHES = [
-  '29a5db2f91e94992bc857c198836c04ffc0b375a0df0835d3c73d6a3419e8c50', // aione217!
-  '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c'  // aione217@
+  'ff6c048a8334f93d06ffafdd7ba4b433cb735ccf63453ed39c52900d419397f6'
+];
+
+// 3-1. 랩원용 비밀번호 SHA-256 단방향 암호화 해시 목록 (복호화 불가 단방향 보안 해시)
+const DEFAULT_MEMBER_PASSWORD_HASHES = [
+  '29a5db2f91e94992bc857c198836c04ffc0b375a0df0835d3c73d6a3419e8c50',
+  '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c'
 ];
 
 // 4. 스프레드시트 시트 이름
@@ -242,24 +247,26 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 2. 관리자 지원자 전체 목록 조회
+  // 2. 지원자 전체 목록 조회 (총괄 관리자 및 랩원 모두 조회 가능)
   if (action === 'get_applicants') {
     const enteredPw = (e.parameter.pw || '').trim();
-    if (!verifyAdminPassword(enteredPw)) {
+    const role = getAuthRole(enteredPw);
+    if (!role) {
       return ContentService.createTextOutput(JSON.stringify({
         status: 'error',
-        message: '관리자 인증 실패'
+        message: '인증 실패: 비밀번호가 올바르지 않습니다.'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
     const applicants = fetchApplicantsFromSheet();
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
+      role: role, // 'admin' 또는 'member'
       applicants: applicants
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 3. 관리자 비밀번호 변경
+  // 3. 관리자(총괄) 비밀번호 변경
   if (action === 'change_password') {
     const oldPw = (e.parameter.old_pw || '').trim();
     const newPw = (e.parameter.new_pw || '').trim();
@@ -267,14 +274,14 @@ function doGet(e) {
     if (!verifyAdminPassword(oldPw)) {
       return ContentService.createTextOutput(JSON.stringify({
         status: 'error',
-        message: '현재 비밀번호가 일치하지 않습니다.'
+        message: '현재 관리자 비밀번호가 일치하지 않습니다.'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (!newPw) {
       return ContentService.createTextOutput(JSON.stringify({
         status: 'error',
-        message: '새 비밀번호를 입력해주세요.'
+        message: '새 관리자 비밀번호를 입력해주세요.'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -282,17 +289,44 @@ function doGet(e) {
     PropertiesService.getScriptProperties().setProperty('ADMIN_PASSWORD_HASH', newHash);
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
-      message: '비밀번호가 성공적으로 변경되었습니다.'
+      message: '관리자 비밀번호가 성공적으로 변경되었습니다.'
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 4. 관리자 특정 지원서 단일 또는 선택 일괄 삭제
+  // 3-1. 랩원용 비밀번호 변경 (총괄 관리자만 변경 가능)
+  if (action === 'change_member_password') {
+    const adminPw = (e.parameter.admin_pw || '').trim();
+    const newPw = (e.parameter.new_pw || '').trim();
+
+    if (!verifyAdminPassword(adminPw)) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'error',
+        message: '관리자 인증 실패: 랩원 비밀번호 변경은 총괄 관리자만 가능합니다.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (!newPw) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'error',
+        message: '새로운 랩원용 비밀번호를 입력해주세요.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const newHash = computeSha256(newPw);
+    PropertiesService.getScriptProperties().setProperty('MEMBER_PASSWORD_HASH', newHash);
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      message: '랩원용 비밀번호가 성공적으로 변경되었습니다.'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 4. 지원서 단일 또는 선택 일괄 삭제 (오직 총괄 관리자만 가능, 랩원 절대 불가)
   if (action === 'delete_applicant') {
     const enteredPw = (e.parameter.pw || '').trim();
     if (!verifyAdminPassword(enteredPw)) {
       return ContentService.createTextOutput(JSON.stringify({
         status: 'error',
-        message: '관리자 인증 실패'
+        message: '삭제 권한이 없습니다: 지원서 삭제는 총괄 관리자(Admin)만 수행할 수 있습니다.'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -766,8 +800,9 @@ function appendApplicantToSheet(item) {
 
 /**
  * [자동 복구 엔진]
- * 구버전 스크립트 실행으로 인해 Q열에 원본 JSON({"name":...})이 남아있는 행을 자동 감지하여
- * 구글 드라이브에 공식 2-Page PDF를 즉시 생성/연결하고 클릭 가능한 '=HYPERLINK'로 자동 전환합니다.
+ * 구버전 스크립트 실행으로 인해 Q열에 원본 JSON({"name":...})이 남아있거나,
+ * 드라이브 PDF 링크가 누락된 행을 자동 감지하여
+ * 구글 드라이브 지정 폴더에 공식 2-Page PDF를 즉시 생성/연결하고 클릭 가능한 '=HYPERLINK'로 자동 전환합니다.
  */
 function repairBrokenRows() {
   try {
@@ -784,24 +819,38 @@ function repairBrokenRows() {
     for (var i = 0; i < numRows; i++) {
       var rowNum = i + 2;
       var colQVal = String(values[i][16] || '').trim();
+      var colRVal = String(values[i][17] || '').trim();
+      var sNameFromCol = String(values[i][1] || '').trim();
+      var sIdFromCol = String(values[i][2] || '').trim();
 
-      // Q열에 구버전 스크립트가 남긴 JSON 문자열({"name":...)이 들어있는 경우
-      if (colQVal.startsWith('{') && colQVal.indexOf('"name"') !== -1) {
+      // 이름과 학번이 모두 비어있는 행은 패스
+      if (!sNameFromCol && !sIdFromCol) continue;
+
+      var isBrokenJson = colQVal.startsWith('{') && colQVal.indexOf('"name"') !== -1;
+      var isMissingPdf = (!colRVal || colRVal.indexOf('drive.google.com') === -1) && (colQVal.indexOf('drive.google.com') === -1);
+
+      // 복구가 필요한 대상인 경우
+      if (isBrokenJson || isMissingPdf) {
         try {
-          var parsed = JSON.parse(colQVal);
-          var sName = parsed.name || String(values[i][1] || '지원자').trim();
-          var sId = parsed.student_id || String(values[i][2] || '학번미입력').trim();
+          var parsed = {};
+          if (isBrokenJson) {
+            try { parsed = JSON.parse(colQVal); } catch (_) {}
+          }
+
+          var sName = parsed.name || sNameFromCol || '지원자';
+          var sId = parsed.student_id || sIdFromCol || '학번미입력';
           var pdfFileName = 'AIONE_지원서_' + sId + '_' + sName + '.pdf';
 
           var pdfUrl = '';
-          // 1) 드라이브 폴더 내 기존 파일 확인
+
+          // 1) 드라이브 폴더 내 이미 동일 파일명의 PDF가 존재하는지 우선 확인
           var files = driveFolder.getFilesByName(pdfFileName);
           if (files.hasNext()) {
             var f = files.next();
             try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
             pdfUrl = f.getUrl();
           } else if (parsed.pdf_base64 && String(parsed.pdf_base64).length > 50) {
-            // 2) JSON에 Base64가 포함되어 있는 경우 무손실 복원
+            // 2) JSON 데이터에 Base64가 포함된 경우 100% 무손실 복원
             try {
               var rawB64 = String(parsed.pdf_base64).trim();
               if (rawB64.indexOf(',') !== -1) rawB64 = rawB64.split(',')[1];
@@ -816,7 +865,7 @@ function repairBrokenRows() {
             }
           }
 
-          // 3) 없으면 지원서 공식 2-Page PDF 컴파일 & 드라이브 저장
+          // 3) 없으면 지원서 공식 규격 HTML -> PDF 컴파일 후 드라이브에 안전 저장
           if (!pdfUrl) {
             var html = buildApplicationHtml({
               name: sName,
@@ -873,8 +922,8 @@ function repairBrokenRows() {
 }
 
 /**
- * 구글 드라이브 폴더의 실제 PDF 파일 상태와 스프레드시트를 실시간 동기화
- * (사용자가 드라이브에서 직접 PDF를 삭제/휴지통 이동한 경우, 시트에서도 해당 행을 자동 정리)
+ * 구글 드라이브 폴더의 실제 PDF 파일 상태와 스프레드시트 링크 점검 및 자동 보정
+ * (PDF 파일 누락 시 자동 생성하여 시트 링크가 항상 유효하도록 보장하며, 지원자 행을 임의로 삭제하지 않습니다.)
  */
 function syncDriveAndSheet() {
   try {
@@ -884,94 +933,97 @@ function syncDriveAndSheet() {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return;
 
-    // 1. 구글 드라이브 폴더 내 활성(휴지통 제외) 파일 목록 수집
+    var driveFolder = getApplicationDriveFolder();
     var activeFileIds = {};
     var activeFileNames = {};
-    var pdfCountInFolder = 0;
+
     try {
-      var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-      var files = folder.getFiles();
+      var files = driveFolder.getFiles();
       while (files.hasNext()) {
         var file = files.next();
         if (!file.isTrashed()) {
-          var fId = file.getId();
-          var fName = file.getName();
-          activeFileIds[fId] = true;
-          activeFileNames[fName] = true;
-          if (fName.toLowerCase().indexOf('.pdf') !== -1) {
-            pdfCountInFolder++;
-          }
+          activeFileIds[file.getId()] = true;
+          activeFileNames[file.getName()] = true;
         }
       }
     } catch (driveErr) {
       Logger.log('Drive folder access warning: ' + driveErr);
-      return; // 드라이브 접근 오류 시 안전을 위해 행을 삭제하지 않음
+      return;
     }
 
-    // 2. 시트의 데이터와 수식(Formula)을 모두 가져옴 (Column Q의 =HYPERLINK 분석용)
     var numRows = lastRow - 1;
     var values = sheet.getRange(2, 1, numRows, 18).getValues();
     var formulas = sheet.getRange(2, 1, numRows, 18).getFormulas();
 
-    for (var i = numRows - 1; i >= 0; i--) {
+    for (var i = 0; i < numRows; i++) {
       var row = values[i];
       var formulaRow = formulas[i];
-
       var name = String(row[1] || '').trim();
       var studentId = String(row[2] || '').trim();
 
-      // 이름과 학번이 모두 비어있는 행은 지원자가 아님
       if (!name && !studentId) continue;
 
-      // Column Q(수식 및 표시값)와 Column R(직접URL) 모두 취합
-      var colQVal = String(row[16] || '').trim();
       var colQFormula = String(formulaRow[16] || '').trim();
       var colRVal = String(row[17] || '').trim();
-      var colRFormula = String(formulaRow[17] || '').trim();
 
-      var combinedLink = [colQFormula, colQVal, colRVal, colRFormula].join(' ');
+      var pdfUrl = colRVal || '';
+      var fileExists = false;
 
-      // 드라이브 연동 행인지 판별: drive.google.com URL이 있거나 HYPERLINK 수식이 걸려있는 행만 대상
-      var isPdfLinkedRow = (
-        combinedLink.indexOf('drive.google.com') !== -1 ||
-        colQFormula.toUpperCase().indexOf('HYPERLINK') !== -1
-      );
-
-      if (isPdfLinkedRow) {
-        var fileExists = false;
-
-        // 1) URL 내 파일 ID 추출하여 드라이브 폴더 내 활성 여부 확인
-        var match = combinedLink.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          var targetId = match[1];
-          if (activeFileIds[targetId]) {
-            fileExists = true;
-          }
+      if (pdfUrl) {
+        var match = pdfUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1] && activeFileIds[match[1]]) {
+          fileExists = true;
         }
+      }
 
-        // 2) 파일명 패턴으로 확인 (예: AIONE_지원서_{학번}_{성명}.pdf)
-        if (!fileExists) {
-          var expectedName = 'AIONE_지원서_' + studentId + '_' + name + '.pdf';
-          if (activeFileNames[expectedName]) {
-            fileExists = true;
-          } else {
-            // 학번 또는 이름이 포함된 PDF 파일이 폴더 내에 있는지 부분 검색
-            for (var fn in activeFileNames) {
-              if (fn.toLowerCase().indexOf('.pdf') !== -1) {
-                if ((studentId && studentId !== '학번미입력' && fn.indexOf(studentId) !== -1) ||
-                    (name && name !== '지원자' && fn.indexOf(name) !== -1)) {
-                  fileExists = true;
-                  break;
-                }
-              }
-            }
+      var expectedName = 'AIONE_지원서_' + (studentId || '학번미입력') + '_' + (name || '지원자') + '.pdf';
+      if (!fileExists && activeFileNames[expectedName]) {
+        fileExists = true;
+      }
+
+      // 만약 드라이브에 PDF가 없거나 수식이 깨진 경우, 지원자 데이터를 바탕으로 안전하게 자동 생성 및 재연결
+      if (!fileExists) {
+        try {
+          var html = buildApplicationHtml({
+            name: name || '지원자',
+            studentId: studentId || '학번미입력',
+            grade: String(row[3] || '-'),
+            phone: String(row[4] || '-'),
+            military: String(row[5] || '-'),
+            keywordIntro: String(row[6] || '-'),
+            motivation: String(row[7] || '-'),
+            problemSolving: String(row[8] || '-'),
+            studyPlan: String(row[9] || '-'),
+            expectation: String(row[10] || '-'),
+            careerPlan: String(row[11] || '-'),
+            techStack: String(row[12] || '없음'),
+            desiredActivities: String(row[13] || '없음'),
+            interviewTimes: String(row[14] || '-'),
+            portfolioLinks: String(row[15] || '없음'),
+            submitDate: String(row[0] || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. MM. dd HH:mm'))
+          });
+
+          var blob = null;
+          try {
+            blob = Utilities.newBlob(html, 'text/html', 'app.html').getAs('application/pdf').setName(expectedName);
+          } catch (_) {
+            blob = HtmlService.createHtmlOutput(html).getAs('application/pdf').setName(expectedName);
           }
-        }
 
-        // 드라이브 폴더에 PDF가 존재하지 않는다면(사용자가 삭제했거나 휴지통으로 보냄), 시트에서 해당 행 자동 삭제
-        if (!fileExists) {
-          Logger.log('Drive PDF missing, deleting row ' + (i + 2) + ': ' + name + ' (' + studentId + ')');
-          sheet.deleteRow(i + 2);
+          if (blob) {
+            var newFile = driveFolder.createFile(blob);
+            try { newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+            var restoredUrl = newFile.getUrl();
+            var targetRowNum = i + 2;
+            sheet.getRange(targetRowNum, 17).setFormula('=HYPERLINK("' + restoredUrl + '", "📄 PDF 열람")');
+            sheet.getRange(targetRowNum, 18).setValue(restoredUrl);
+            try {
+              sheet.getRange(targetRowNum, 17).setFontColor('#0284c7').setFontLine('underline').setFontWeight('bold');
+            } catch (_) {}
+            Logger.log('Auto-restored missing PDF for row ' + targetRowNum + ': ' + expectedName);
+          }
+        } catch (healErr) {
+          Logger.log('Auto-healing warning for row ' + (i + 2) + ': ' + healErr);
         }
       }
     }
@@ -1103,6 +1155,22 @@ function verifyAdminPassword(entered) {
     return enteredHash === storedHash || entered === storedHash;
   }
   return DEFAULT_ADMIN_PASSWORD_HASHES.indexOf(enteredHash) !== -1;
+}
+
+function verifyMemberPassword(entered) {
+  if (!entered) return false;
+  const enteredHash = computeSha256(entered);
+  const storedHash = PropertiesService.getScriptProperties().getProperty('MEMBER_PASSWORD_HASH');
+  if (storedHash) {
+    return enteredHash === storedHash || entered === storedHash;
+  }
+  return DEFAULT_MEMBER_PASSWORD_HASHES.indexOf(enteredHash) !== -1;
+}
+
+function getAuthRole(entered) {
+  if (verifyAdminPassword(entered)) return 'admin';
+  if (verifyMemberPassword(entered)) return 'member';
+  return null;
 }
 
 function computeSha256(str) {

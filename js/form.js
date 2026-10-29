@@ -711,10 +711,12 @@
     // Populate the hidden template elements first
     const setVal = (id, val) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = val || '-';
+      if (el) el.textContent = (val !== undefined && val !== null && String(val).trim() !== '') ? val : '-';
     };
 
-    setVal('pdf-val-date', data.submit_date || new Date().toLocaleString('ko-KR'));
+    const displayDate = data.submit_date || data.submitted_at || new Date().toLocaleString('ko-KR');
+
+    setVal('pdf-val-date', displayDate);
     setVal('pdf-val-name', data.name);
     setVal('pdf-val-student-id', data.student_id);
     setVal('pdf-val-grade', data.grade);
@@ -764,6 +766,42 @@
       clone2.style.height = '1123px';
       clone2.style.background = '#ffffff';
       clone2.style.color = '#0f172a';
+
+      // Directly enforce high contrast text and values on cloned nodes
+      const populateCloneNode = (cloneNode) => {
+        const applyVal = (id, val) => {
+          const el = cloneNode.querySelector(`#${id}`);
+          if (el) {
+            el.textContent = (val !== undefined && val !== null && String(val).trim() !== '') ? val : '-';
+            el.style.color = (id === 'pdf-val-interview' || id === 'pdf-val-portfolio') ? '#0284c7' : '#0f172a';
+            el.style.opacity = '1';
+            el.style.visibility = 'visible';
+          }
+        };
+        applyVal('pdf-val-date', displayDate);
+        applyVal('pdf-val-name', data.name);
+        applyVal('pdf-val-student-id', data.student_id);
+        applyVal('pdf-val-grade', data.grade);
+        applyVal('pdf-val-phone', data.phone);
+        applyVal('pdf-val-military', data.military);
+        applyVal('pdf-val-tech', data.tech_stack || '없음');
+        applyVal('pdf-val-activity', data.desired_activities || '없음');
+        applyVal('pdf-val-interview', data.interview_available_times);
+        applyVal('pdf-val-portfolio', data.portfolio_links || '없음');
+        applyVal('pdf-val-keyword', data.keyword_intro);
+        applyVal('pdf-val-motivation', data.motivation);
+        applyVal('pdf-val-page2-name', data.name);
+        applyVal('pdf-val-page2-student-id', data.student_id);
+        applyVal('pdf-val-problem', data.problem_solving);
+        applyVal('pdf-val-study', data.study_plan);
+        applyVal('pdf-val-expectation', data.expectation);
+        applyVal('pdf-val-career', data.career_plan);
+        applyVal('pdf-val-sign-date', `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월 ${new Date().getDate()}일`);
+        applyVal('pdf-val-sign-name', data.name);
+      };
+
+      populateCloneNode(clone1);
+      populateCloneNode(clone2);
 
       // Responsive mobile scale (< 820px)
       const isMobile = window.innerWidth < 820;
@@ -984,10 +1022,15 @@
   // 6. ADMIN PORTAL (APPLICANT MANAGEMENT & ON-DEMAND PDF DOWNLOAD)
   // [보안 강화] SHA-256 단방향 암호화 해시 적용: 소스코드 및 GitHub에 평문 비밀번호가 절대 노출되지 않습니다.
   // --------------------------------------------------------------------------
-  // 기본 관리자 비밀번호 해시 목록 (aione217! 및 aione217@ 지원, 복호화 불가)
+  // 기본 관리자 비밀번호 해시 목록 (복호화 불가 단방향 보안 해시)
   const DEFAULT_ADMIN_PW_HASHES = [
-    '29a5db2f91e94992bc857c198836c04ffc0b375a0df0835d3c73d6a3419e8c50', // aione217!
-    '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c'  // aione217@
+    'ff6c048a8334f93d06ffafdd7ba4b433cb735ccf63453ed39c52900d419397f6'
+  ];
+
+  // 랩원(조회 전용) 공식 비밀번호 해시 목록 (복호화 불가 단방향 보안 해시)
+  const DEFAULT_MEMBER_PW_HASHES = [
+    '29a5db2f91e94992bc857c198836c04ffc0b375a0df0835d3c73d6a3419e8c50',
+    '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c'
   ];
 
   async function hashPassword(plainText) {
@@ -1005,6 +1048,78 @@
   const getCustomAdminPasswordHash = () => {
     return localStorage.getItem('aione_admin_password_hash');
   };
+  const getCustomMemberPasswordHash = () => {
+    return localStorage.getItem('aione_member_password_hash');
+  };
+  const getAuthRole = () => {
+    return sessionStorage.getItem('aione_auth_role') || 'member';
+  };
+  const isMemberRole = () => {
+    return getAuthRole() === 'member';
+  };
+
+  function applyRoleUI() {
+    const role = getAuthRole();
+    const isMember = role === 'member';
+
+    // 1. 헤더 권한 뱃지
+    const badge = document.getElementById('admin-status-badge');
+    if (badge) {
+      if (isMember) {
+        badge.textContent = 'LAB MEMBER';
+        badge.className = 'px-2 py-0.5 text-[10px] font-mono rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+        badge.title = '랩원 모드: 조회 및 공식 PDF 다운로드 전용';
+      } else {
+        badge.textContent = 'LAB ADMIN';
+        badge.className = 'px-2 py-0.5 text-[10px] font-mono rounded bg-sky-500/15 text-sky-300 border border-sky-500/30';
+        badge.title = '총괄 관리자: 모든 관리 및 설정 권한 부여';
+      }
+    }
+
+    // 2. 설정(톱니바퀴) 버튼 - 랩원은 접근 불가
+    const settingsToggleBtn = document.getElementById('admin-settings-toggle-btn');
+    const settingsPanel = document.getElementById('admin-settings-panel');
+    if (settingsToggleBtn) {
+      if (isMember) {
+        settingsToggleBtn.classList.add('!hidden');
+        if (settingsPanel) settingsPanel.classList.add('hidden');
+      } else {
+        settingsToggleBtn.classList.remove('!hidden');
+      }
+    }
+
+    // 3. 테이블 헤더 체크박스 - 랩원은 숨김
+    const thSelect = document.getElementById('admin-th-select');
+    if (thSelect) {
+      if (isMember) {
+        thSelect.classList.add('hidden');
+      } else {
+        thSelect.classList.remove('hidden');
+      }
+    }
+
+    // 4. 선택 일괄 삭제 버튼 - 랩원은 숨김
+    const deleteSelectedBtn = document.getElementById('admin-delete-selected-btn');
+    if (deleteSelectedBtn && isMember) {
+      deleteSelectedBtn.classList.add('!hidden');
+    }
+
+    // 5. 테이블 헤더 관리 열 텍스트
+    const thAction = document.getElementById('admin-th-action');
+    if (thAction) {
+      thAction.textContent = isMember ? '지원서 열람 & PDF' : '지원서 관리 & PDF';
+    }
+
+    // 6. 하단 안내 문구
+    const footerText = document.getElementById('admin-footer-text');
+    if (footerText) {
+      if (isMember) {
+        footerText.innerHTML = '<i class="fa-solid fa-user-check text-emerald-400 mr-1.5"></i><span class="text-emerald-300 font-semibold">[랩원 권한]</span> <span class="text-slate-300">지원서 조회, 공식 PDF 발급, CSV 내보내기 권한 모드입니다. (삭제 및 관리자 설정 불가)</span>';
+      } else {
+        footerText.innerHTML = '<i class="fa-solid fa-circle-info text-sky-400 mr-1.5"></i><span>[📄 PDF 다운로드] 클릭 시 해당 지원자의 2-Page 공식 입실지원서가 즉시 생성되어 저장됩니다.</span>';
+      }
+    }
+  }
   let adminApplicantsData = [];
   let currentSearchQuery = '';
   let currentGradeFilter = 'all';
@@ -1031,6 +1146,8 @@
     const gasUrlSaveBtn = document.getElementById('admin-gas-url-save-btn');
     const changePwInput = document.getElementById('admin-change-pw-input');
     const changePwSaveBtn = document.getElementById('admin-change-pw-save-btn');
+    const changeMemberPwInput = document.getElementById('admin-change-member-pw-input');
+    const changeMemberPwSaveBtn = document.getElementById('admin-change-member-pw-save-btn');
 
     if (!modal) return;
 
@@ -1054,12 +1171,12 @@
       });
     }
 
-    // Change Password Button (Synchronized with Google Apps Script DB)
+    // Change Admin Password Button (Synchronized with Google Apps Script DB)
     if (changePwSaveBtn && changePwInput) {
       changePwSaveBtn.addEventListener('click', async () => {
         const newPw = changePwInput.value.trim();
         if (!newPw) {
-          window.showToast?.('⚠️ 변경할 새 비밀번호를 입력해주세요.');
+          window.showToast?.('⚠️ 변경할 새 관리자 비밀번호를 입력해주세요.');
           return;
         }
 
@@ -1095,9 +1212,9 @@
         changePwSaveBtn.innerHTML = '<span>비밀번호 변경</span>';
 
         if (gasSynced) {
-          window.showToast?.(`🔑 웹사이트와 연동된 구글 DB 비밀번호가 [${newPw}]로 동시 변경되었습니다!`);
+          window.showToast?.(`🔑 웹사이트와 연동된 구글 DB 관리자 비밀번호가 [${newPw}]로 동시 변경되었습니다!`);
         } else if (gasUrl) {
-          window.showToast?.(`🔑 로컬 비밀번호가 [${newPw}]로 변경되었습니다. (구글 시트 연동 상태 확인 권장)`);
+          window.showToast?.(`🔑 로컬 관리자 비밀번호가 [${newPw}]로 변경되었습니다. (구글 시트 연동 상태 확인 권장)`);
         } else {
           window.showToast?.(`🔑 관리자 비밀번호가 [${newPw}]로 성공적으로 변경되었습니다.`);
         }
@@ -1106,6 +1223,57 @@
         const pwModal = document.getElementById('password-changed-modal');
         const pwModalVal = document.getElementById('pw-changed-modal-val');
         if (pwModalVal) pwModalVal.textContent = newPw;
+        if (pwModal) pwModal.classList.add('active');
+      });
+    }
+
+    // Change Member Password Button (Admin only, Synchronized with Google Apps Script DB)
+    if (changeMemberPwSaveBtn && changeMemberPwInput) {
+      changeMemberPwSaveBtn.addEventListener('click', async () => {
+        const newMemberPw = changeMemberPwInput.value.trim();
+        if (!newMemberPw) {
+          window.showToast?.('⚠️ 변경할 새 랩원용 비밀번호를 입력해주세요.');
+          return;
+        }
+
+        const gasUrl = getGasUrl();
+        const currentAdminPw = sessionStorage.getItem('aione_admin_pw') || '';
+
+        changeMemberPwSaveBtn.disabled = true;
+        changeMemberPwSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>변경 중...</span>';
+
+        let gasSynced = false;
+        if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
+          try {
+            const syncUrl = `${gasUrl}?action=change_member_password&admin_pw=${encodeURIComponent(currentAdminPw)}&new_pw=${encodeURIComponent(newMemberPw)}`;
+            const res = await fetch(syncUrl);
+            if (res.ok) {
+              const json = await res.json();
+              if (json.status === 'success') {
+                gasSynced = true;
+              }
+            }
+          } catch (err) {
+            console.warn('GAS change member password sync error:', err);
+          }
+        }
+
+        const newHash = await hashPassword(newMemberPw);
+        localStorage.setItem('aione_member_password_hash', newHash);
+        changeMemberPwInput.value = '';
+        changeMemberPwSaveBtn.disabled = false;
+        changeMemberPwSaveBtn.innerHTML = '<span>랩원 비밀번호 변경</span>';
+
+        if (gasSynced) {
+          window.showToast?.(`👥 랩원용 비밀번호가 [${newMemberPw}]로 동시 변경되었습니다! (구글 DB 연동)`);
+        } else {
+          window.showToast?.(`👥 랩원용 비밀번호가 [${newMemberPw}]로 변경되었습니다.`);
+        }
+
+        // Open Password Changed Popup Modal
+        const pwModal = document.getElementById('password-changed-modal');
+        const pwModalVal = document.getElementById('pw-changed-modal-val');
+        if (pwModalVal) pwModalVal.textContent = newMemberPw;
         if (pwModal) pwModal.classList.add('active');
       });
     }
@@ -1121,6 +1289,7 @@
       if (isAuthed) {
         authView?.classList.add('hidden');
         dashView?.classList.remove('hidden');
+        applyRoleUI();
         loadAdminApplicants();
       } else {
         authView?.classList.remove('hidden');
@@ -1184,49 +1353,69 @@
           submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>인증 확인 중...</span>';
         }
 
-        let verified = false;
+        let verifiedRole = null;
         const gasUrl = getGasUrl();
         const enteredHash = await hashPassword(enteredPw);
-        const customHash = getCustomAdminPasswordHash();
+        const customAdminHash = getCustomAdminPasswordHash();
+        const customMemberHash = getCustomMemberPasswordHash();
         const legacyPlainPw = localStorage.getItem('aione_admin_password');
 
-        // 1. 관리자가 직접 새로 설정한 커스텀 해시와 일치하는 경우
-        if (customHash && enteredHash === customHash) {
-          verified = true;
+        // 1. 관리자가 직접 새로 설정한 커스텀 해시와 일치하는 경우 (Admin)
+        if (customAdminHash && enteredHash === customAdminHash) {
+          verifiedRole = 'admin';
         }
-        // 2. 브라우저에 기존 평문 저장 데이터가 남아있는 경우 (호환성 및 자동 해시 마이그레이션)
+        // 2. 브라우저에 기존 평문 저장 데이터가 남아있는 경우 (Admin 호환성)
         else if (legacyPlainPw && enteredPw === legacyPlainPw) {
-          verified = true;
+          verifiedRole = 'admin';
           localStorage.setItem('aione_admin_password_hash', enteredHash);
           localStorage.removeItem('aione_admin_password');
         }
-        // 3. 기본 비밀번호 해시 목록과 일치하는 경우 (aione217! 또는 aione217@ 모두 허용)
-        else if (!customHash && DEFAULT_ADMIN_PW_HASHES.includes(enteredHash)) {
-          verified = true;
+        // 3. 기본 관리자 비밀번호 해시 목록과 일치하는 경우 (Admin)
+        else if (!customAdminHash && DEFAULT_ADMIN_PW_HASHES.includes(enteredHash)) {
+          verifiedRole = 'admin';
         }
-        // 4. Google Apps Script 백엔드 연동 확인
-        else if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
+
+        // 4. 랩원용 비밀번호 검증 (Member)
+        if (!verifiedRole) {
+          if (customMemberHash && enteredHash === customMemberHash) {
+            verifiedRole = 'member';
+          } else if (!customMemberHash && DEFAULT_MEMBER_PW_HASHES.includes(enteredHash)) {
+            verifiedRole = 'member';
+          }
+        }
+
+        // 5. Google Apps Script 백엔드 연동 확인
+        if (!verifiedRole && gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
           try {
             const res = await fetch(`${gasUrl}?action=get_applicants&pw=${encodeURIComponent(enteredPw)}`);
             const json = await res.json();
             if (json.status === 'success') {
-              verified = true;
+              verifiedRole = json.role || 'member';
             }
           } catch (_) {}
         }
 
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>관리자 대시보드 입장</span><i class="fa-solid fa-arrow-right text-xs"></i>';
+          submitBtn.innerHTML = '<span>포털 대시보드 입장</span><i class="fa-solid fa-arrow-right text-xs"></i>';
         }
 
-        if (verified) {
+        if (verifiedRole) {
           sessionStorage.setItem('aione_admin_authed', 'true');
+          sessionStorage.setItem('aione_auth_role', verifiedRole);
           sessionStorage.setItem('aione_admin_pw', enteredPw);
           authError?.classList.add('hidden');
           authView?.classList.add('hidden');
           dashView?.classList.remove('hidden');
-          window.showToast?.('🔐 관리자 인증이 완료되었습니다.');
+
+          applyRoleUI();
+
+          if (verifiedRole === 'admin') {
+            window.showToast?.('🔐 [총괄 관리자] 모든 관리 및 설정 권한으로 로그인되었습니다.');
+          } else {
+            window.showToast?.('👥 [랩원 모드] 지원서 조회 및 공식 PDF 다운로드 권한으로 로그인되었습니다.');
+          }
+
           loadAdminApplicants();
         } else {
           authError?.classList.remove('hidden');
@@ -1240,11 +1429,12 @@
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
         sessionStorage.removeItem('aione_admin_authed');
+        sessionStorage.removeItem('aione_auth_role');
         sessionStorage.removeItem('aione_admin_pw');
         dashView?.classList.add('hidden');
         authView?.classList.remove('hidden');
         if (pwInput) pwInput.value = '';
-        window.showToast?.('👋 관리자 세션이 로그아웃되었습니다.');
+        window.showToast?.('👋 세션이 안전하게 로그아웃되었습니다.');
       });
     }
 
@@ -1344,9 +1534,15 @@
   }
 
   function updateAdminSelectionState() {
+    const isMember = isMemberRole();
     const selectAllCheckbox = document.getElementById('admin-select-all');
     const deleteSelectedBtn = document.getElementById('admin-delete-selected-btn');
     const selectedCountSpan = document.getElementById('admin-selected-count');
+
+    if (isMember) {
+      if (deleteSelectedBtn) deleteSelectedBtn.classList.add('!hidden');
+      return;
+    }
 
     const itemCheckboxes = document.querySelectorAll('.admin-select-item');
     const checkedBoxes = document.querySelectorAll('.admin-select-item:checked');
@@ -1358,7 +1554,7 @@
 
     if (deleteSelectedBtn) {
       if (count > 0) {
-        deleteSelectedBtn.classList.remove('hidden');
+        deleteSelectedBtn.classList.remove('hidden', '!hidden');
       } else {
         deleteSelectedBtn.classList.add('hidden');
       }
@@ -1522,10 +1718,22 @@
         ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
         : 'bg-sky-500/15 text-sky-300 border-sky-500/30';
 
+      const isMember = isMemberRole();
+
+      const checkboxTd = isMember
+        ? ''
+        : `<td class="py-3 px-2 text-center">
+             <input type="checkbox" class="admin-select-item form-checkbox rounded text-sky-500 cursor-pointer w-3.5 h-3.5 accent-sky-500" data-student-id="${escapeHtml(app.student_id)}" data-name="${escapeHtml(app.name)}">
+           </td>`;
+
+      const deleteBtnHtml = isMember
+        ? ''
+        : `<button type="button" class="admin-act-delete btn-glow-secondary !py-1 !px-2 text-[11px] text-slate-400 hover:!text-rose-400 hover:!border-rose-500/40" title="지원서 삭제">
+             <i class="fa-solid fa-trash-can text-[10px]"></i>
+           </button>`;
+
       tr.innerHTML = `
-        <td class="py-3 px-2 text-center">
-          <input type="checkbox" class="admin-select-item form-checkbox rounded text-sky-500 cursor-pointer w-3.5 h-3.5 accent-sky-500" data-student-id="${escapeHtml(app.student_id)}" data-name="${escapeHtml(app.name)}">
-        </td>
+        ${checkboxTd}
         <td class="py-3 px-2 text-center text-slate-500 font-mono">${idx + 1}</td>
         <td class="py-3 px-3 whitespace-nowrap text-slate-400 font-mono text-[11px]">${escapeHtml(dateStr)}</td>
         <td class="py-3 px-3 whitespace-nowrap font-bold text-white">${escapeHtml(app.name || '-')}</td>
@@ -1558,9 +1766,7 @@
             <button type="button" class="admin-act-copy btn-glow-secondary !py-1 !px-2 text-[11px] text-slate-400 hover:text-white" title="지원자 핵심 정보 클립보드 복사">
               <i class="fa-regular fa-copy text-[10px]"></i>
             </button>
-            <button type="button" class="admin-act-delete btn-glow-secondary !py-1 !px-2 text-[11px] text-slate-400 hover:!text-rose-400 hover:!border-rose-500/40" title="지원서 삭제">
-              <i class="fa-solid fa-trash-can text-[10px]"></i>
-            </button>
+            ${deleteBtnHtml}
           </div>
         </td>
       `;
