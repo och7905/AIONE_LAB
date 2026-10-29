@@ -78,7 +78,12 @@ function doPost(e) {
     // Step B-1. 프론트엔드에서 2-Page 공식 PDF 바이너리(Base64)가 전달된 경우 (100% 무손실 복원)
     if (data.pdf_base64 && String(data.pdf_base64).length > 50) {
       try {
-        const decodedBytes = Utilities.base64Decode(data.pdf_base64);
+        let rawB64 = String(data.pdf_base64).trim();
+        if (rawB64.indexOf(',') !== -1) {
+          rawB64 = rawB64.split(',')[1];
+        }
+        rawB64 = rawB64.replace(/\s/g, '');
+        const decodedBytes = Utilities.base64Decode(rawB64);
         const restoredBlob = Utilities.newBlob(decodedBytes, 'application/pdf', pdfFileName);
         pdfFile = driveFolder.createFile(restoredBlob);
       } catch (decodeErr) {
@@ -616,7 +621,22 @@ function getTargetSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) return null;
 
+  // 1. '지원자명단' 이름의 시트 탐색
   let sheet = ss.getSheetByName(SHEET_NAME);
+
+  // 2. 없으면 첫 번째 시트를 사용하고 이름을 '지원자명단'으로 자동 동기화
+  if (!sheet) {
+    const sheets = ss.getSheets();
+    if (sheets && sheets.length > 0) {
+      sheet = sheets[0];
+      try {
+        sheet.setName(SHEET_NAME);
+      } catch (_) {}
+    } else {
+      sheet = ss.insertSheet(SHEET_NAME);
+    }
+  }
+
   const headers = [
     '접수일시',
     '성명',
@@ -638,8 +658,7 @@ function getTargetSheet() {
     'PDF원본URL'
   ];
 
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length)
       .setBackground('#0284c7')
@@ -683,8 +702,112 @@ function appendApplicantToSheet(item) {
       hyperlinkFormula,
       item.pdfUrl || ''
     ]);
+
+    // 17번째 열(Q열)에 확실한 클릭 가능 수식 및 하이퍼링크 스타일 지정
+    const newRowNum = sheet.getLastRow();
+    if (item.pdfUrl) {
+      try {
+        const linkCell = sheet.getRange(newRowNum, 17);
+        linkCell.setFormula('=HYPERLINK("' + item.pdfUrl + '", "📄 PDF 열람")');
+        sheet.getRange(newRowNum, 18).setValue(item.pdfUrl);
+
+        try {
+          linkCell.setFontColor('#0284c7').setFontLine('underline').setFontWeight('bold');
+        } catch (_) {}
+      } catch (fErr) {
+        Logger.log('Set formula error: ' + fErr);
+      }
+    }
   } catch (err) {
     Logger.log('Spreadsheet appendRow warning: ' + err);
+  }
+}
+
+/**
+ * [자동 복구 엔진]
+ * 구버전 스크립트 실행으로 인해 Q열에 원본 JSON({"name":...})이 남아있는 행을 자동 감지하여
+ * 구글 드라이브에 공식 2-Page PDF를 즉시 생성/연결하고 클릭 가능한 '=HYPERLINK'로 자동 전환합니다.
+ */
+function repairBrokenRows() {
+  try {
+    const sheet = getTargetSheet();
+    if (!sheet) return;
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return;
+
+    var driveFolder;
+    try {
+      driveFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    } catch (_) {
+      driveFolder = DriveApp.getRootFolder();
+    }
+
+    const numRows = lastRow - 1;
+    const values = sheet.getRange(2, 1, numRows, 18).getValues();
+
+    for (var i = 0; i < numRows; i++) {
+      var rowNum = i + 2;
+      var colQVal = String(values[i][16] || '').trim();
+
+      // Q열에 구버전 스크립트가 남긴 JSON 문자열({"name":...)이 들어있는 경우
+      if (colQVal.startsWith('{') && colQVal.indexOf('"name"') !== -1) {
+        try {
+          var parsed = JSON.parse(colQVal);
+          var sName = parsed.name || String(values[i][1] || '지원자').trim();
+          var sId = parsed.student_id || String(values[i][2] || '학번미입력').trim();
+          var pdfFileName = 'AIONE_지원서_' + sId + '_' + sName + '.pdf';
+
+          var pdfUrl = '';
+          // 1) 드라이브 폴더 내 기존 파일 확인
+          var files = driveFolder.getFilesByName(pdfFileName);
+          if (files.hasNext()) {
+            var f = files.next();
+            try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+            pdfUrl = f.getUrl();
+          } else {
+            // 2) 없으면 지원서 공식 2-Page PDF 즉시 컴파일 & 드라이브 저장
+            var html = buildApplicationHtml({
+              name: sName,
+              studentId: sId,
+              grade: parsed.grade || String(values[i][3] || '-'),
+              phone: parsed.phone || String(values[i][4] || '-'),
+              military: parsed.military || String(values[i][5] || '-'),
+              keywordIntro: parsed.keyword_intro || String(values[i][6] || '-'),
+              motivation: parsed.motivation || String(values[i][7] || '-'),
+              problemSolving: parsed.problem_solving || String(values[i][8] || '-'),
+              studyPlan: parsed.study_plan || String(values[i][9] || '-'),
+              expectation: parsed.expectation || String(values[i][10] || '-'),
+              careerPlan: parsed.career_plan || String(values[i][11] || '-'),
+              techStack: parsed.tech_stack || String(values[i][12] || '없음'),
+              desiredActivities: parsed.desired_activities || String(values[i][13] || '없음'),
+              interviewTimes: parsed.interview_available_times || String(values[i][14] || '-'),
+              portfolioLinks: parsed.portfolio_links || String(values[i][15] || '없음'),
+              submitDate: String(values[i][0] || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. MM. dd HH:mm'))
+            });
+            var blob = HtmlService.createHtmlOutput(html).getAs('application/pdf').setName(pdfFileName);
+            var created = driveFolder.createFile(blob);
+            try { created.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+            pdfUrl = created.getUrl();
+          }
+
+          if (pdfUrl) {
+            var cellQ = sheet.getRange(rowNum, 17);
+            cellQ.setFormula('=HYPERLINK("' + pdfUrl + '", "📄 PDF 열람")');
+            sheet.getRange(rowNum, 18).setValue(pdfUrl);
+
+            try {
+              cellQ.setFontColor('#0284c7').setFontLine('underline').setFontWeight('bold');
+            } catch (_) {}
+
+            Logger.log('Successfully repaired row ' + rowNum + ': ' + sName + ' (' + sId + ') -> ' + pdfUrl);
+          }
+        } catch (repairErr) {
+          Logger.log('Repair row ' + rowNum + ' error: ' + repairErr);
+        }
+      }
+    }
+  } catch (outerErr) {
+    Logger.log('repairBrokenRows fatal: ' + outerErr);
   }
 }
 
@@ -747,16 +870,10 @@ function syncDriveAndSheet() {
 
       var combinedLink = [colQFormula, colQVal, colRVal, colRFormula].join(' ');
 
-      // 드라이브 연동 행인지 판별:
-      // A. drive.google.com URL이 포함되어 있거나
-      // B. HYPERLINK 수식이 걸려있거나
-      // C. 표시값이 "PDF" 관련 텍스트이거나
-      // D. 드라이브 폴더 내에 PDF 파일이 아예 0개인데 시트에만 행이 남아있는 경우
+      // 드라이브 연동 행인지 판별: drive.google.com URL이 있거나 HYPERLINK 수식이 걸려있는 행만 대상
       var isPdfLinkedRow = (
         combinedLink.indexOf('drive.google.com') !== -1 ||
-        colQFormula.toUpperCase().indexOf('HYPERLINK') !== -1 ||
-        colQVal.indexOf('PDF') !== -1 ||
-        pdfCountInFolder === 0
+        colQFormula.toUpperCase().indexOf('HYPERLINK') !== -1
       );
 
       if (isPdfLinkedRow) {
@@ -807,7 +924,10 @@ function fetchApplicantsFromSheet() {
     const sheet = getTargetSheet();
     if (!sheet) return [];
 
-    // 드라이브의 실제 PDF 상태와 시트 행을 먼저 자동 동기화
+    // 1. 구버전 JSON 잔류 행 자동 복구 (Q열이 {"name":...} 형태인 경우 드라이브 PDF 생성 및 수식 전환)
+    repairBrokenRows();
+
+    // 2. 드라이브의 실제 PDF 상태와 시트 행을 자동 동기화
     syncDriveAndSheet();
 
     const lastRow = sheet.getLastRow();
@@ -941,4 +1061,22 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/**
+ * ----------------------------------------------------------------------------
+ * [수동 검사 및 1초 복구 함수]
+ * Apps Script 편집기 상단에서 'testRepairAndDiagnose'를 선택 후 [실행] 버튼을 누르면
+ * 1) 스프레드시트의 깨진 JSON 행을 감지하여 구글 드라이브에 PDF 생성 및 열람 링크를 즉시 복구합니다.
+ * 2) 완료 시 스프레드시트에 안내 토스트 알림을 띄웁니다.
+ * ----------------------------------------------------------------------------
+ */
+function testRepairAndDiagnose() {
+  repairBrokenRows();
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      ss.toast('✅ 기존 지원자의 드라이브 PDF 생성 및 열람 링크 복구가 완료되었습니다!', 'AIONE LAB', 5);
+    }
+  } catch (_) {}
 }

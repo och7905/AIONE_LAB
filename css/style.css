@@ -364,6 +364,51 @@ html.light .form-input:focus, html.light .form-textarea:focus, html.light .form-
   z-index: 1100 !important;
 }
 
+/* --------------------------------------------------------------------------
+   PDF 온라인 열람기(모달 뷰어) 용지 가독성 강화 (다크모드 상속 방지)
+   용지 내 모든 텍스트가 흰색 배경 위에서 선명한 흑색/진남색(#0f172a)으로 표시됩니다.
+   -------------------------------------------------------------------------- */
+#viewer-paper-container .pdf-page {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+#viewer-paper-container .pdf-page table {
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+#viewer-paper-container .pdf-page th {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+#viewer-paper-container .pdf-page td {
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+#viewer-paper-container .pdf-page td[id^="pdf-val-"],
+#viewer-paper-container .pdf-page div[id^="pdf-val-"],
+#viewer-paper-container .pdf-page span[id^="pdf-val-"] {
+  color: #0f172a !important;
+}
+
+#viewer-paper-container .pdf-page #pdf-val-interview {
+  color: #0284c7 !important;
+}
+
+#viewer-paper-container .pdf-page #pdf-val-portfolio {
+  color: #0284c7 !important;
+}
+
+#viewer-paper-container .pdf-page .badge {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+  border-color: #bbf7d0 !important;
+}
+
 #password-changed-modal {
   z-index: 1150 !important;
 }

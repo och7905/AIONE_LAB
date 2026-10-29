@@ -753,6 +753,7 @@
       clone1.style.width = '794px';
       clone1.style.height = '1123px';
       clone1.style.background = '#ffffff';
+      clone1.style.color = '#0f172a';
 
       const clone2 = page2.cloneNode(true);
       clone2.id = 'viewer-clone-page-2';
@@ -762,6 +763,7 @@
       clone2.style.width = '794px';
       clone2.style.height = '1123px';
       clone2.style.background = '#ffffff';
+      clone2.style.color = '#0f172a';
 
       // Responsive mobile scale (< 820px)
       const isMobile = window.innerWidth < 820;
@@ -889,7 +891,7 @@
           await fetch(targetGasUrl, {
             method: "POST",
             mode: "no-cors",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(payload)
           });
         } catch (gasErr) {
