@@ -49,6 +49,9 @@
   <!-- Font Awesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+  <!-- html2pdf.js PDF Generation Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="css/style.css?v=20261029_12">
 </head>
@@ -1490,17 +1493,17 @@
         </div>
       </div>
 
-      <h3 class="text-2xl font-bold text-white mb-2">지원서 접수 및 PDF 생성 완료!</h3>
+      <h3 class="text-2xl font-bold text-white mb-2">지원서 접수 완료!</h3>
       <p class="text-xs text-sky-400 font-mono mb-4" id="modal-applicant-name">지원자님</p>
 
       <div class="p-4 rounded-xl bg-white/5 border border-white/10 text-left text-xs text-slate-300 space-y-2.5 mb-5">
         <p class="flex items-start gap-2">
-          <i class="fa-solid fa-file-pdf text-rose-400 mt-0.5 text-sm"></i>
-          <span><strong class="text-white">공식 지원서 양식 PDF가 자동 생성</strong>되어 내 컴퓨터(다운로드 폴더)에 저장되었습니다.</span>
+          <i class="fa-solid fa-cloud-arrow-up text-sky-400 mt-0.5 text-sm"></i>
+          <span>지원서가 <strong>AIONE LAB 구글 드라이브에 PDF로 안전하게 보관</strong>되었으며, 랩장에게 접수 알림이 전송되었습니다.</span>
         </p>
         <p class="flex items-start gap-2">
-          <i class="fa-solid fa-envelope-circle-check text-sky-400 mt-0.5 text-sm"></i>
-          <span>작성하신 지원서 내역이 <strong>och7905@naver.com</strong> 랩장 메일함으로 즉시 전송되었습니다. (혹시 수신함에 없다면 스팸메일함도 함께 확인해주세요)</span>
+          <i class="fa-solid fa-file-pdf text-rose-400 mt-0.5 text-sm"></i>
+          <span><strong>지원자 보관용 PDF 사본</strong>이 내 컴퓨터(다운로드 폴더)에 자동 다운로드되었습니다.</span>
         </p>
         <p class="flex items-start gap-2">
           <i class="fa-solid fa-clock text-amber-400 mt-0.5 text-sm"></i>
@@ -1509,10 +1512,6 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <a id="modal-mailto-pdf-btn" href="#" class="btn-glow-secondary w-full py-2.5 text-xs flex items-center justify-center gap-2">
-          <i class="fa-solid fa-paper-plane text-sky-400"></i>
-          <span>다운로드된 PDF를 랩장 메일로 직접 전달하기 (선택)</span>
-        </a>
         <button type="button" class="btn-glow-primary w-full py-3 text-sm modal-close-btn">
           확인 및 닫기
         </button>
@@ -1522,7 +1521,7 @@
 
 
   <!-- ======================================================================
-       MODAL 2: SUBMISSION ERROR / FALLBACK
+       MODAL 2: SUBMISSION NETWORK NOTICE
        ====================================================================== -->
   <div id="error-modal" class="modal-backdrop">
     <div class="modal-content text-center">
@@ -1530,23 +1529,19 @@
         <i class="fa-solid fa-triangle-exclamation"></i>
       </div>
 
-      <h3 class="text-2xl font-bold text-white mb-2">네트워크 전송 지연 발생</h3>
+      <h3 class="text-2xl font-bold text-white mb-2">일시적 네트워크 지연 발생</h3>
       <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-        일시적인 Formspree 통신 오류가 발생했습니다.<br>
-        <strong>지원서 내용은 안전하게 보존되었으며, 공식 PDF가 생성되었습니다.</strong>
+        네트워크 연결이 불안정하여 전송에 지연이 발생했습니다.<br>
+        <strong>지원서 내용은 브라우저에 안전하게 보존되었습니다.</strong>
       </p>
 
-      <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-left text-xs text-slate-300 space-y-2 mb-6">
-        <p>지원서 유실을 방지하기 위해 작성하신 내용이 담긴 이메일 수동 발송 링크를 즉시 연결해 드립니다.</p>
+      <div class="p-4 rounded-xl bg-white/5 border border-white/10 text-left text-xs text-slate-300 space-y-2 mb-6">
+        <p>인터넷 연결 상태를 확인하신 후 다시 제출해 주시거나, 계속 지연될 경우 랩장 문의 오픈채팅방 또는 이메일(och7905@naver.com)로 문의해 주세요.</p>
       </div>
 
       <div class="flex flex-col gap-2.5">
-        <a id="error-mailto-btn" href="#" class="btn-glow-primary w-full py-3 text-sm justify-center">
-          <i class="fa-solid fa-envelope"></i>
-          <span>이메일(och7905@naver.com)로 즉시 전송</span>
-        </a>
-        <button type="button" class="btn-glow-secondary w-full py-2.5 text-xs modal-close-btn">
-          창 닫기
+        <button type="button" class="btn-glow-primary w-full py-3 text-sm justify-center modal-close-btn">
+          확인 및 닫기
         </button>
       </div>
     </div>
@@ -2034,9 +2029,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="js/canvas.js?v=20261029_24"></script>
-  <script src="js/main.js?v=20261029_24"></script>
-  <script src="js/form.js?v=20261029_24"></script>
+  <script src="js/canvas.js?v=20261029_25"></script>
+  <script src="js/main.js?v=20261029_25"></script>
+  <script src="js/form.js?v=20261029_25"></script>
 
 </body>
 </html>

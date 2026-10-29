@@ -8,11 +8,21 @@
 
   const STORAGE_KEY = 'aione_application_draft';
   const ADMIN_STORAGE_KEY = 'aione_admin_submissions';
-  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mzeevple';
-  const CONTACT_EMAIL = 'och7905@naver.com';
+  
+  // ==========================================================================
+  // Google Apps Script (GAS) Web App URL
+  // 구글 앱스 스크립트 배포 후 발급받은 웹앱 URL을 아래 따옴표 안에 입력해 주시거나,
+  // 웹사이트 관리자 포털 설정창에서 등록하면 자동으로 연동됩니다.
+  // ==========================================================================
+  const GAS_WEBAPP_URL = "여기에_배포된_GAS_URL_입력";
+  const CONTACT_EMAIL = "och7905@naver.com";
 
-  // 구글 앱스 스크립트 웹앱 URL (배포 후 아래에 기입하거나 관리자 포털 설정창에 등록하면 구글 시트 영구 보존 및 실시간 양방향 연동됩니다)
-  let GOOGLE_APPS_SCRIPT_URL = localStorage.getItem('aione_gas_url') || '';
+  // 활성화된 GAS URL 취득 (관리자 포털 설정값 우선)
+  const getGasUrl = () => {
+    const saved = localStorage.getItem('aione_gas_url');
+    if (saved && saved.startsWith('http')) return saved;
+    return GAS_WEBAPP_URL;
+  };
 
   const form = document.getElementById('recruitment-form');
   if (!form) return;
@@ -468,7 +478,7 @@
       setVal('pdf-val-sign-date', `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`);
       setVal('pdf-val-sign-name', data.name);
 
-      const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
+      const filename = `AIONE_지원서_${data.student_id}_${data.name}.pdf`;
 
       // 2. Normalize viewport & body to eliminate any coordinate displacement or mobile clipping
       window.scrollTo(0, 0);
@@ -903,7 +913,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // Form Submission & Multi-Channel Delivery (Formspree + PDF Generation)
+  // Form Submission & Multi-Channel Delivery (Google Apps Script Webhook + PDF Auto Download)
   // --------------------------------------------------------------------------
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -915,101 +925,47 @@
 
     const data = collectFormData();
 
-    // 1. Loading state: Generating PDF and sending notification
-    setLoadingState(true, '지원서 공식 양식 PDF 생성 중...');
+    // 1. Loading state: 버튼 비활성화 및 텍스트 변경
+    setLoadingState(true, '지원서 PDF 생성 및 드라이브 저장 중...');
 
     try {
-      // Step A: Generate PDF and auto-download 2-page document to applicant PC
-      let pdfResult = null;
+      // 2. 브라우저에서 지원자 보관용 2-Page 공식 규격 PDF 자동 생성 및 즉시 다운로드 (AIONE_지원서_{학번}_{성명}.pdf)
       try {
-        pdfResult = await generateApplicationPDF(data);
+        await generateApplicationPDF(data);
       } catch (pdfErr) {
-        console.error('generateApplicationPDF error:', pdfErr);
-      }
-      const filename = pdfResult?.filename || `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
-
-      // Step B: Create Permanent Online PDF Viewing Link (never expires, 100% CORS-safe)
-      const viewerUrl = await createApplicantViewerLink(data);
-
-      setLoadingState(true, '지원서 내역 이메일 발송 중...');
-
-      // Step C: Construct Formspree payload with single unified PDF viewing & download link
-      const emailSubject = `[AIONE LAB 2026 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
-      const formspreePayload = {
-        _subject: emailSubject,
-        "1_성명": data.name,
-        "2_학번": data.student_id,
-        "3_지원구분_학년": data.grade,
-        "4_연락처": data.phone,
-        "5_병역구분": data.military,
-        "6_나를_표현하는_단어_이유": data.keyword_intro,
-        "7_지원동기": data.motivation,
-        "8_문제해결경험": data.problem_solving,
-        "9_학업계획": data.study_plan,
-        "10_얻고자하는것": data.expectation,
-        "11_진로계획": data.career_plan,
-        "12_기술스택_경험": data.tech_stack || "없음",
-        "13_연구실_희망활동": data.desired_activities || "없음",
-        "14_면접가능시간": data.interview_available_times,
-        "15_포트폴리오링크": data.portfolio_links || "없음",
-        "16_공식_지원서_PDF_열람_및_다운로드_링크": `${viewerUrl}&download_pdf=1`,
-        "17_접수일시": new Date().toLocaleString('ko-KR')
-      };
-
-      const response = await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formspreePayload)
-      });
-
-      console.log('Formspree response status:', response.status);
-
-      if (!response.ok) {
-        let errDetail = `HTTP ${response.status}`;
-        try {
-          const errJson = await response.json();
-          if (errJson && (errJson.error || errJson.errors)) {
-            errDetail = errJson.error || JSON.stringify(errJson.errors);
-          }
-        } catch (_) {}
-        throw new Error(`Formspree 전송 오류 (${errDetail})`);
+        console.error('Local PDF generation warning:', pdfErr);
       }
 
-      // Step D. If Google Apps Script WebApp is configured, send data to Google Spreadsheet
-      const activeGasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
-      if (activeGasUrl) {
+      // 3. 백엔드(Google Apps Script Web App)로 지원서 데이터 비동기 전송
+      const targetGasUrl = getGasUrl();
+      if (targetGasUrl && targetGasUrl !== "여기에_배포된_GAS_URL_입력") {
         try {
-          fetch(activeGasUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'submit',
-              ...data,
-              submitted_at: new Date().toLocaleString('ko-KR')
-            })
-          }).catch((gasErr) => console.warn('Google Apps Script warning:', gasErr));
+          await fetch(targetGasUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          });
         } catch (gasErr) {
-          console.warn('Google Apps Script submission warning:', gasErr);
+          console.warn("Google Apps Script Webhook warning (no-cors expected):", gasErr);
         }
       }
 
-      // Step E. Save to local admin storage
+      // 4. 로컬 관리자 스토리지에도 안전 보관
       saveToAdminLocalStorage(data);
 
-      // Complete submission
+      // 5. 임시 저장 데이터 정리 및 폼 초기화
       localStorage.removeItem(STORAGE_KEY);
       downloadBackupJSON(data);
-      showSuccessModal(data);
       form.reset();
       charLimitFields.forEach(({ limit, counterId }) => {
         const counter = document.getElementById(counterId);
         if (counter) counter.textContent = `0 / ${limit}자`;
       });
       syncAllPills();
+
+      // 6. 성공 모달 표시
+      showSuccessModal(data);
 
     } catch (error) {
       console.error('Submission failed:', error);
@@ -1032,31 +988,14 @@
   }
 
   // --------------------------------------------------------------------------
-  // Modals & Fallback Logic
+  // Modals
   // --------------------------------------------------------------------------
   function showSuccessModal(data) {
     const modal = document.getElementById('success-modal');
     const modalApplicantName = document.getElementById('modal-applicant-name');
-    const mailtoPdfBtn = document.getElementById('modal-mailto-pdf-btn');
 
     if (modalApplicantName) {
       modalApplicantName.textContent = `${data.name} (${data.student_id}) 님`;
-    }
-
-    if (mailtoPdfBtn) {
-      const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
-      const subject = encodeURIComponent(`[AIONE LAB 신규 지원서 PDF 전달] ${data.name} (${data.student_id} / ${data.grade})`);
-      const body = encodeURIComponent(
-        `안녕하세요, AIONE LAB 지도교수님 및 랩장님.\n\n` +
-        `2026학년도 연구원 지원자 ${data.name} (${data.student_id} / ${data.grade})입니다.\n\n` +
-        `웹사이트 지원서 접수 완료 후 공식 생성된 지원서 양식 PDF 파일(${filename})을 첨부하여 발송해 드립니다.\n\n` +
-        `[지원자 연락처]\n` +
-        `- 전화번호: ${data.phone}\n` +
-        `- 포트폴리오 링크: ${data.portfolio_links || '없음'}\n\n` +
-        `감사합니다.\n` +
-        `${data.name} 드림`
-      );
-      mailtoPdfBtn.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
     }
 
     if (modal) {
@@ -1066,37 +1005,7 @@
 
   function handleSubmissionError(data, error) {
     downloadBackupJSON(data);
-
     const errorModal = document.getElementById('error-modal');
-    const mailtoBtn = document.getElementById('error-mailto-btn');
-
-    if (mailtoBtn) {
-      const subject = encodeURIComponent(`[AIONE LAB 지원서 수동 제출] ${data.name} (${data.student_id})`);
-      const body = encodeURIComponent(
-        `안녕하세요, AIONE LAB 2026 연구원 지원자 ${data.name}입니다.\n\n` +
-        `웹 전송 네트워크 오류로 인해 직접 이메일로 지원서를 전송합니다.\n\n` +
-        `[지원자 정보]\n` +
-        `- 이름: ${data.name}\n` +
-        `- 학번: ${data.student_id}\n` +
-        `- 학년: ${data.grade}\n` +
-        `- 연락처: ${data.phone}\n` +
-        `- 병역: ${data.military}\n\n` +
-        `[본인을 표현하는 단어]:\n${data.keyword_intro}\n\n` +
-        `[지원 동기]:\n${data.motivation}\n\n` +
-        `[문제 해결 경험]:\n${data.problem_solving}\n\n` +
-        `[학업 계획]:\n${data.study_plan}\n\n` +
-        `[얻고자 하는 것]:\n${data.expectation}\n\n` +
-        `[졸업 후 진로]:\n${data.career_plan}\n\n` +
-        `[기술 스택]:\n${data.tech_stack}\n\n` +
-        `[연구실 희망 활동]:\n${data.desired_activities}\n\n` +
-        `[면접 가능 시간대]:\n${data.interview_available_times}\n\n` +
-        `[포트폴리오 링크]:\n${data.portfolio_links}\n\n` +
-        `(다운로드된 지원서 PDF 파일을 본 메일에 첨부 부탁드립니다)`
-      );
-
-      mailtoBtn.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-    }
-
     if (errorModal) {
       errorModal.classList.add('active');
     }
@@ -1162,7 +1071,8 @@
 
     // Load saved GAS URL if available
     if (gasUrlInput) {
-      gasUrlInput.value = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL || '';
+      const activeUrl = getGasUrl();
+      gasUrlInput.value = (activeUrl && activeUrl !== "여기에_배포된_GAS_URL_입력") ? activeUrl : '';
     }
 
     if (gasUrlSaveBtn && gasUrlInput) {
@@ -1170,11 +1080,9 @@
         const val = gasUrlInput.value.trim();
         if (val) {
           localStorage.setItem('aione_gas_url', val);
-          GOOGLE_APPS_SCRIPT_URL = val;
           window.showToast?.('✅ 구글 앱스 스크립트 연동 URL이 저장되었습니다.');
         } else {
           localStorage.removeItem('aione_gas_url');
-          GOOGLE_APPS_SCRIPT_URL = '';
           window.showToast?.('ℹ️ 연동 URL이 초기화되었습니다 (로컬 저장소 모드).');
         }
         loadAdminApplicants();
@@ -1190,7 +1098,7 @@
           return;
         }
 
-        const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+        const gasUrl = getGasUrl();
         const currentPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
 
         changePwSaveBtn.disabled = true;
@@ -1310,12 +1218,12 @@
         }
 
         let verified = false;
-        const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+        const gasUrl = getGasUrl();
         const expectedPw = getAdminPassword();
 
         if (enteredPw === expectedPw || enteredPw === ADMIN_PASSWORD_DEFAULT) {
           verified = true;
-        } else if (gasUrl) {
+        } else if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
           try {
             const res = await fetch(`${gasUrl}?action=get_applicants&pw=${encodeURIComponent(enteredPw)}`);
             const json = await res.json();
@@ -1404,10 +1312,10 @@
 
     let gasList = [];
     let gasSuccess = false;
-    const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+    const gasUrl = getGasUrl();
     const adminPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
 
-    if (gasUrl) {
+    if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
       try {
         const fetchUrl = `${gasUrl}?action=get_applicants&pw=${encodeURIComponent(adminPw)}`;
         const res = await fetch(fetchUrl);
@@ -1630,9 +1538,9 @@
           } catch (_) {}
 
           // 3. If GAS is connected, request deletion in Google Sheets
-          const gasUrl = localStorage.getItem('aione_gas_url') || GOOGLE_APPS_SCRIPT_URL;
+          const gasUrl = getGasUrl();
           const adminPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
-          if (gasUrl) {
+          if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
             try {
               const delUrl = `${gasUrl}?action=delete_applicant&student_id=${encodeURIComponent(app.student_id)}&name=${encodeURIComponent(app.name)}&pw=${encodeURIComponent(adminPw)}`;
               await fetch(delUrl);
