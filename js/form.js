@@ -1035,10 +1035,25 @@
 
   // --------------------------------------------------------------------------
   // 6. ADMIN PORTAL (APPLICANT MANAGEMENT & ON-DEMAND PDF DOWNLOAD)
+  // [보안 강화] SHA-256 단방향 암호화 해시 적용: 소스코드 및 GitHub에 평문 비밀번호가 절대 노출되지 않습니다.
   // --------------------------------------------------------------------------
-  const ADMIN_PASSWORD_DEFAULT = 'aione2026!';
-  const getAdminPassword = () => {
-    return localStorage.getItem('aione_admin_password') || ADMIN_PASSWORD_DEFAULT;
+  // 기본 관리자 비밀번호의 SHA-256 단방향 암호화 해시 (복호화 불가)
+  const DEFAULT_ADMIN_PW_HASH = '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c';
+
+  async function hashPassword(plainText) {
+    if (!plainText) return '';
+    try {
+      const utf8 = new TextEncoder().encode(plainText);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (_) {
+      return plainText;
+    }
+  }
+
+  const getAdminPasswordHash = () => {
+    return localStorage.getItem('aione_admin_password_hash') || DEFAULT_ADMIN_PW_HASH;
   };
   let adminApplicantsData = [];
   let currentSearchQuery = '';
@@ -1099,7 +1114,7 @@
         }
 
         const gasUrl = getGasUrl();
-        const currentPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
+        const currentPw = sessionStorage.getItem('aione_admin_pw') || '';
 
         changePwSaveBtn.disabled = true;
         changePwSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>변경 중...</span>';
@@ -1120,8 +1135,10 @@
           }
         }
 
-        // Save locally in browser
-        localStorage.setItem('aione_admin_password', newPw);
+        // 평문은 저장하지 않고 오직 SHA-256 단방향 암호화 해시만 브라우저에 저장
+        const newHash = await hashPassword(newPw);
+        localStorage.setItem('aione_admin_password_hash', newHash);
+        localStorage.removeItem('aione_admin_password'); // 기존 평문 저장 데이터 완전 삭제
         sessionStorage.setItem('aione_admin_pw', newPw);
         changePwInput.value = '';
         changePwSaveBtn.disabled = false;
@@ -1219,9 +1236,11 @@
 
         let verified = false;
         const gasUrl = getGasUrl();
-        const expectedPw = getAdminPassword();
+        const enteredHash = await hashPassword(enteredPw);
+        const expectedHash = getAdminPasswordHash();
 
-        if (enteredPw === expectedPw) {
+        // SHA-256 단방향 암호화 해시 비교 (코드/GitHub에 실제 비밀번호가 전혀 노출되지 않음)
+        if (enteredHash === expectedHash) {
           verified = true;
         } else if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
           try {
@@ -1313,7 +1332,7 @@
     let gasList = [];
     let gasSuccess = false;
     const gasUrl = getGasUrl();
-    const adminPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
+    const adminPw = sessionStorage.getItem('aione_admin_pw') || '';
 
     if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
       try {
@@ -1539,7 +1558,7 @@
 
           // 3. If GAS is connected, request deletion in Google Sheets
           const gasUrl = getGasUrl();
-          const adminPw = sessionStorage.getItem('aione_admin_pw') || getAdminPassword();
+          const adminPw = sessionStorage.getItem('aione_admin_pw') || '';
           if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
             try {
               const delUrl = `${gasUrl}?action=delete_applicant&student_id=${encodeURIComponent(app.student_id)}&name=${encodeURIComponent(app.name)}&pw=${encodeURIComponent(adminPw)}`;

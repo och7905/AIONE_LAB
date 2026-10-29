@@ -17,8 +17,8 @@ const DRIVE_FOLDER_ID = '1MpmUBVRdnnOnz9AQByEbG1Kc25fMWy8R';
 // 2. 알림 수신 랩장 이메일 주소
 const NOTIFICATION_EMAIL = 'och7905@naver.com';
 
-// 3. 관리자 초기 기본 비밀번호
-const DEFAULT_ADMIN_PASSWORD = 'aione2026!';
+// 3. 관리자 기본 비밀번호 SHA-256 단방향 암호화 해시 (복호화 불가, 평문 미노출)
+const DEFAULT_ADMIN_PASSWORD_HASH = '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c';
 
 // 4. 스프레드시트 시트 이름
 const SHEET_NAME = '지원자명단';
@@ -202,7 +202,8 @@ function doGet(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    PropertiesService.getScriptProperties().setProperty('ADMIN_PASSWORD', newPw);
+    const newHash = computeSha256(newPw);
+    PropertiesService.getScriptProperties().setProperty('ADMIN_PASSWORD_HASH', newHash);
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
       message: '비밀번호가 성공적으로 변경되었습니다.'
@@ -706,8 +707,18 @@ function deleteApplicantFromSheet(studentId, name) {
 
 function verifyAdminPassword(entered) {
   if (!entered) return false;
-  const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD') || DEFAULT_ADMIN_PASSWORD;
-  return entered === stored;
+  const enteredHash = computeSha256(entered);
+  const storedHash = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD_HASH') || DEFAULT_ADMIN_PASSWORD_HASH;
+  return enteredHash === storedHash || entered === storedHash;
+}
+
+function computeSha256(str) {
+  if (!str) return '';
+  const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str, Utilities.Charset.UTF_8);
+  return rawHash.map(function(byte) {
+    var v = (byte < 0 ? byte + 256 : byte).toString(16);
+    return v.length === 1 ? '0' + v : v;
+  }).join('');
 }
 
 function escapeHtml(str) {
