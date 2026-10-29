@@ -10,7 +10,8 @@
 ![AIONE LAB Preview](https://img.shields.io/badge/AIONE_LAB-2026_Recruitment-0284c7?style=for-the-badge&logo=openai&logoColor=white)
 ![OpenChat](https://img.shields.io/badge/KakaoTalk-오픈채팅_문의-FEE500?style=for-the-badge&logo=kakaotalk&logoColor=black)
 ![Tech](https://img.shields.io/badge/HTML5-CSS3-JavaScript_SPA-38bdf8?style=for-the-badge&logo=javascript&logoColor=white)
-![PDF Generation](https://img.shields.io/badge/PDF_Engine-html2pdf.js-e11d48?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
+![PDF Generation](https://img.shields.io/badge/PDF_Engine-jsPDF_+_html2canvas-e11d48?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
+![Online Viewer](https://img.shields.io/badge/Online_Viewer-Direct_Application_Review-10b981?style=for-the-badge&logo=googlechrome&logoColor=white)
 ![GPU Cluster](https://img.shields.io/badge/GPU_Cluster-RTX_Blackwell_96GB-f59e0b?style=for-the-badge&logo=nvidia&logoColor=white)
 
 ---
@@ -53,6 +54,13 @@
 - **Windows 연구 워크스테이션 서버**: Intel Xeon w5-3433 | 64GB ECC | NVIDIA RTX PRO 6000 Blackwell Max-Q 96GB | Dell 006CX9
 - **Linux 고성능 클러스터 서버**: AMD EPYC 9124 16-Core | 128GB ECC | NVIDIA RTX A4000 × 2 | ASUS K14PG-D24 Series
 
+### 5. 신규 연구원 입실 혜택 (Benefits)
+- **독립 컴퓨팅 자원**: 대기 시간 없는 개인 전용 워크스테이션 및 GPU 클러스터 계정 발급
+- **전용 연구 공간**: 융합과학관 217호 개인 고정 연구 데스크 및 모니터 환경 제공
+- **방학 세미나 & 학술 연구**: 방학 기간 집중 심화 세미나, 국내외 학술대회 논문 투고 및 참가 등록비 전액 지원
+- **산학 프로젝트 & 특허 출원**: 산업체 실무 데이터 기반 인공지능 연구 프로젝트 및 특허 공동 출원 기회
+- **진로 연계**: AI 대학원 석사과정 연계 및 인공지능 분야 유수 기업 취업 멘토링
+
 ---
 
 ## 📝 2026 연구원 지원서 시스템 (#apply)
@@ -81,12 +89,14 @@
 
 ---
 
-## 📄 공식 지원서 양식 A4 2-Page 정밀 PDF 실시간 생성 & 전송 시스템
+## 📄 공식 지원서 양식 A4 2-Page 정밀 PDF 실시간 생성 & 온라인 열람 시스템
 
-### 1. 공식 입실 지원서 양식 PDF 자동 생성 (Zero-Clipping 2-Page Architecture)
-- 지원서 접수 버튼 클릭 시 `html2pdf.js` 엔진을 통해 지원자의 모든 응답이 기재된 **공식 대학교 연구실 입실 지원서 양식**이 실시간 컴파일됩니다.
-- 가상 윈도우 스케일링 오프셋을 전면 제거하고 A4 정밀 규격(`750px` / `210mm × 297mm`)과 명시적 페이지 분할(`.html2pdf__page-break`)을 적용하여 **좌측 및 하단 잘림(Clipping)이 전혀 없는 완벽한 2장짜리 공식 지원서 PDF**를 생성합니다.
-- 지원자 컴퓨터(다운로드 폴더)에 **`AIONE_2026_지원서_{학번}_{이름}.pdf`** 파일이 자동 다운로드됩니다.
+### 1. 공식 입실 지원서 양식 PDF 자동 생성 (Zero-Clipping 2-Page Direct Engine)
+- 지원서 접수 버튼 클릭 시 `html2canvas` 및 `jsPDF` 엔진을 통해 지원자의 모든 응답이 기재된 **공식 대학교 연구실 입실 지원서 양식**이 실시간 컴파일됩니다.
+- **2페이지 독립 캡처 및 결합 아키텍처 (Zero-Clipping Guarantee)**:
+  - 기존의 단일 캔버스 자동 분할 시 발생하던 뷰포트 크기 간섭, 우측 짤림, 1페이지 출력 버그를 원천 차단하기 위해 **1페이지([`#pdf-page-1`](file:///c:/Users/오창현/Desktop/AIONE LAB/index.html))와 2페이지([`#pdf-page-2`](file:///c:/Users/오창현/Desktop/AIONE LAB/index.html))를 분리**했습니다.
+  - A4 96 DPI 정규 픽셀 규격(`794px × 1123px`)으로 고해상도 2배수(`scale: 2`) 개별 캡처 후, `jsPDF`를 통해 표준 A4(`210mm × 297mm`) 규격에 1:1로 정확하게 2페이지를 순차 결합합니다.
+  - 좌우 대칭 48px 여백이 완벽히 유지되며, 내용 잘림 없이 **항상 정확한 2페이지 정규 규격 지원서 PDF**가 지원자 PC(다운로드 폴더)에 **`AIONE_2026_지원서_{학번}_{이름}.pdf`** 파일로 자동 저장됩니다.
 - **페이지별 구성 요소**:
   - **Page 1 (첫 번째 장)**:
     - 대전대학교 컴퓨터공학 AIONE LAB 공식 엠블럼 로고 및 문서 접수 헤더
@@ -102,12 +112,15 @@
     - 접수 일자, 지원자 성명, 정식 (인/서명) 날인 영역
     - 하단 페이지 번호: `- 2 / 2 -`
 
-### 2. 이메일 전달 시스템
-- **Formspree 실시간 비동기(AJAX) 병렬 전송**:
+### 2. 이메일 전달 및 공식 온라인 열람기 시스템
+- **Formspree 실시간 비동기(AJAX) 전송**:
   - 엔드포인트: `https://formspree.io/f/mzeevple`
-  - 메일 제목: `[AIONE LAB 2026 연구원 지원서] {이름} ({학번} / {학년})`
-  - 스팸 필터링 방지를 위해 `email` 및 `_replyto` 발송자 식별 헤더를 페이로드에 명시하여 랩장 메일(`och7905@naver.com`)로 신뢰도 높게 수신
-  - **독립 병렬 실행(Concurrent Execution)**: PDF 생성/다운로드와 Formspree 전송을 `Promise.all`로 병렬 처리하여, 다운로드 창이나 지연과 상관없이 메일이 즉시 발송되도록 보장
+  - 수신 메일함: `och7905@naver.com` (오창현 랩장)
+  - 메일 제목: `[AIONE LAB 2026 지원서] {이름} ({학번} / {학년})`
+  - **생성된 지원서 공식 PDF 열람 링크 탑재**:
+    - 외부 무료 파일 호스팅(1시간 후 만료되거나 CORS 보안 차단 문제 발생)을 배제하고, 지원자의 지원 내역이 실시간 탑재된 **영구 유효 공식 온라인 열람 링크(`생성된_지원서_공식_PDF_열람링크`)**가 Formspree 이메일 최상단에 자동 포함됩니다.
+    - 지원서 데이터를 UTF-8 무손실 Base64로 URL 인코딩하여 링크를 생성하며, 랩장님이 네이버 메일에서 해당 링크를 클릭하시면 웹사이트가 **[AIONE LAB 지원서 공식 온라인 열람기 (`#applicant-viewer-modal`)]** 모드로 자동 실행됩니다.
+    - 열람기에서는 지원자의 2페이지 지원서 서식 원본을 고해상도로 열람할 수 있으며, 상단의 **`[공식 PDF 다운로드]`** 버튼을 통해 언제든 깨끗한 정규 2-Page PDF 파일을 즉시 다시 내려받을 수 있습니다.
 - **Google Apps Script Web App 연동 지원 (선택 옵션 - 실제 PDF 파일 첨부 발송)**:
   - Formspree 무료 플랜의 파일 첨부 제약을 극복할 수 있도록, 100% 무료 Google Apps Script 웹앱 연동 기능을 내장(`js/form.js` 내 `GOOGLE_APPS_SCRIPT_URL`).
   - Google Apps Script를 배포하여 URL을 입력하면, Gmail API를 통해 **실제 `.pdf` 파일이 첨부된 이메일**이 랩장 메일함으로 100% 무료 자동 발송됩니다.
@@ -125,18 +138,18 @@
 
 ```
 AIONE LAB/
-├── index.html              # 메인 SPA 웹페이지 (신경망 캔버스, 서버스펙, 연구진, 지원서, 사이드 드로어, PDF 템플릿)
+├── index.html              # 메인 SPA 웹페이지 (신경망 캔버스, 서버스펙, 연구진, 지원서, 사이드 드로어, PDF 템플릿, 온라인 열람기 모달)
 ├── css/
-│   └── style.css           # 글래스모피즘, 사이드 드로어, 네온 인터랙션, 다크/라이트 테마, 선택 블록 스타일
+│   └── style.css           # 글래스모피즘, 사이드 드로어, 네온 인터랙션, 다크/라이트 테마, 모달 및 선택 블록 스타일
 ├── js/
 │   ├── canvas.js           # 인터랙티브 신경망 입자 캔버스 (60fps)
 │   ├── main.js             # 사이드 토글 네비게이션 드로어, 최상단 시작 스크롤 제어, 테마 토글, 모달 제어
-│   └── form.js             # 지원서 검증, PDF 실시간 생성/다운로드, Formspree & GAS 메일 연동
+│   └── form.js             # 지원서 검증, A4 2-Page 무결점 PDF 생성/다운로드, 온라인 열람기, Formspree & GAS 메일 연동
 ├── assets/
 │   └── logo.png            # AIONE LAB 공식 엠블럼 고해상도 로고
 ├── server.ps1              # 무설치 경량 로컬 웹서버 스크립트 (캐시 방지 헤더 탑재)
 ├── start-server.bat        # 로컬 웹서버 원클릭 실행 배치 파일
-└── README.md               # 프로젝트 공식 문서
+└── README.md               # 프로젝트 공식 문서 (최신화 완료)
 ```
 
 ---

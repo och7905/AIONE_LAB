@@ -413,12 +413,13 @@
 
   // --------------------------------------------------------------------------
   // --------------------------------------------------------------------------
-  // PDF Generation System (Official Form Template via html2pdf)
+  // PDF Generation System (Official Form Template - Exact 2-Page Zero Clipping)
   // --------------------------------------------------------------------------
   async function generateApplicationPDF(data) {
     const wrapper = document.getElementById('pdf-render-wrapper');
-    const template = document.getElementById('pdf-application-template');
-    if (!template || !wrapper) return null;
+    const page1 = document.getElementById('pdf-page-1');
+    const page2 = document.getElementById('pdf-page-2');
+    if (!wrapper || !page1 || !page2) return null;
 
     try {
       // 1. Populate text fields for both Page 1 and Page 2
@@ -427,7 +428,10 @@
         if (el) el.textContent = val || '-';
       };
 
-      setVal('pdf-val-date', new Date().toLocaleString('ko-KR'));
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      setVal('pdf-val-date', dateStr);
       setVal('pdf-val-name', data.name);
       setVal('pdf-val-student-id', data.student_id);
       setVal('pdf-val-grade', data.grade);
@@ -451,62 +455,298 @@
       setVal('pdf-val-expectation', data.expectation);
       setVal('pdf-val-career', data.career_plan);
 
-      const now = new Date();
       setVal('pdf-val-sign-date', `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`);
       setVal('pdf-val-sign-name', data.name);
 
       const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
 
-      // 2. Position template at top-left behind webpage content for clean rendering
+      // 2. Position wrapper at fixed (0, 0)
       wrapper.style.display = 'block';
-      wrapper.style.position = 'absolute';
+      wrapper.style.position = 'fixed';
       wrapper.style.top = '0px';
       wrapper.style.left = '0px';
+      wrapper.style.width = '794px';
       wrapper.style.zIndex = '-99999';
       wrapper.style.opacity = '1';
 
-      // Allow 200ms for browser to render layout and fonts
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Capture options for pixel-perfect A4 96DPI -> 2x scale = 1588 x 2246
+      const canvasOptions = {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        scrollX: 0,
+        scrollY: 0
+      };
 
+      // Step A: Capture Page 1 (isolated at top 0)
+      page1.style.display = 'block';
+      page2.style.display = 'none';
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const canvas1 = await html2canvas(page1, canvasOptions);
+
+      // Step B: Capture Page 2 (isolated at top 0)
+      page1.style.display = 'none';
+      page2.style.display = 'block';
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const canvas2 = await html2canvas(page2, canvasOptions);
+
+      // Restore display
+      page1.style.display = 'block';
+      page2.style.display = 'block';
+      wrapper.style.display = 'none';
+
+      // Step C: Assemble 2-page PDF via jsPDF
+      const jsPDFClass = window.jsPDF || window.jspdf?.jsPDF;
       let pdfBlob = null;
-      if (typeof html2pdf !== 'undefined') {
+
+      if (jsPDFClass) {
+        const doc = new jsPDFClass({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          compress: true
+        });
+
+        // Add Page 1
+        const img1 = canvas1.toDataURL('image/jpeg', 0.98);
+        doc.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+
+        // Add Page 2
+        doc.addPage('a4', 'portrait');
+        const img2 = canvas2.toDataURL('image/jpeg', 0.98);
+        doc.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+
+        // Save locally to applicant's download folder
+        doc.save(filename);
+
+        // Extract Blob
+        pdfBlob = doc.output('blob');
+      } else if (typeof html2pdf !== 'undefined') {
+        const template = document.getElementById('pdf-application-template');
+        wrapper.style.display = 'block';
         const opt = {
-          margin: [8, 8, 8, 8],
+          margin: 0,
           filename: filename,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            scrollX: 0,
-            scrollY: 0,
-            x: 0,
-            y: 0
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: {
-            mode: ['css', 'legacy'],
-            before: '.html2pdf__page-break'
-          }
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 794 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-
-        // Render PDF directly to user's download folder
-        await html2pdf().set(opt).from(template).save();
-
-        // Obtain Blob if Google Apps Script attachment is enabled
-        if (GOOGLE_APPS_SCRIPT_URL) {
-          pdfBlob = await html2pdf().set(opt).from(template).output('blob');
-        }
+        const worker = html2pdf().set(opt).from(template);
+        await worker.save();
+        pdfBlob = await worker.output('blob');
+        wrapper.style.display = 'none';
       }
 
-      // Hide wrapper again
-      wrapper.style.display = 'none';
       return { filename, pdfBlob };
     } catch (err) {
       console.error('PDF generation error:', err);
       if (wrapper) wrapper.style.display = 'none';
+      if (page1) page1.style.display = 'block';
+      if (page2) page2.style.display = 'block';
     }
     return null;
+  }
+
+  // --------------------------------------------------------------------------
+  // Applicant Data Encoding & Online Viewing Link Generation
+  // --------------------------------------------------------------------------
+  function createApplicantViewerLink(data) {
+    try {
+      const compact = {
+        n: data.name || '',
+        i: data.student_id || '',
+        g: data.grade || '',
+        p: data.phone || '',
+        m: data.military || '',
+        t: data.tech_stack || '',
+        a: data.desired_activities || '',
+        v: data.interview_available_times || '',
+        l: data.portfolio_links || '',
+        k: data.keyword_intro || '',
+        o: data.motivation || '',
+        s: data.problem_solving || '',
+        u: data.study_plan || '',
+        e: data.expectation || '',
+        c: data.career_plan || '',
+        d: new Date().toLocaleString('ko-KR')
+      };
+
+      const jsonStr = JSON.stringify(compact);
+      const utf8Bytes = new TextEncoder().encode(jsonStr);
+      let binary = '';
+      for (let idx = 0; idx < utf8Bytes.length; idx++) {
+        binary += String.fromCharCode(utf8Bytes[idx]);
+      }
+      const b64 = btoa(binary);
+
+      // Determine robust base URL (fallback to official GitHub Pages URL if testing on local file)
+      let baseUrl = 'https://och7905.github.io/AIONE_LAB/';
+      if (window.location.protocol.startsWith('http') && !window.location.hostname.includes('localhost')) {
+        baseUrl = window.location.origin + window.location.pathname;
+        if (!baseUrl.endsWith('/') && !baseUrl.endsWith('.html')) {
+          baseUrl += '/';
+        }
+      }
+
+      return `${baseUrl}?view_app=${encodeURIComponent(b64)}`;
+    } catch (err) {
+      console.error('Failed to create viewer link:', err);
+      return `https://och7905.github.io/AIONE_LAB/?applicant=${encodeURIComponent(data.name)}`;
+    }
+  }
+
+  function decodeApplicantData(raw) {
+    try {
+      const binary = atob(decodeURIComponent(raw));
+      const bytes = new Uint8Array(binary.length);
+      for (let idx = 0; idx < binary.length; idx++) {
+        bytes[idx] = binary.charCodeAt(idx);
+      }
+      const jsonStr = new TextDecoder().decode(bytes);
+      const compact = JSON.parse(jsonStr);
+
+      return {
+        name: compact.n || compact.name || '',
+        student_id: compact.i || compact.student_id || '',
+        grade: compact.g || compact.grade || '',
+        phone: compact.p || compact.phone || '',
+        military: compact.m || compact.military || '',
+        tech_stack: compact.t || compact.tech_stack || '',
+        desired_activities: compact.a || compact.desired_activities || '',
+        interview_available_times: compact.v || compact.interview_available_times || '',
+        portfolio_links: compact.l || compact.portfolio_links || '',
+        keyword_intro: compact.k || compact.keyword_intro || '',
+        motivation: compact.o || compact.motivation || '',
+        problem_solving: compact.s || compact.problem_solving || '',
+        study_plan: compact.u || compact.study_plan || '',
+        expectation: compact.e || compact.expectation || '',
+        career_plan: compact.c || compact.career_plan || '',
+        submit_date: compact.d || compact.submit_date || ''
+      };
+    } catch (err) {
+      console.error('Failed to decode applicant data:', err);
+      return null;
+    }
+  }
+
+  function openApplicantViewerModal(data) {
+    const modal = document.getElementById('applicant-viewer-modal');
+    const headerInfo = document.getElementById('viewer-header-info');
+    const container = document.getElementById('viewer-paper-container');
+    const downloadBtn = document.getElementById('viewer-download-pdf-btn');
+    const printBtn = document.getElementById('viewer-print-btn');
+    const closeBtn = document.getElementById('viewer-close-btn');
+
+    if (!modal || !container) return;
+
+    if (headerInfo) {
+      headerInfo.textContent = `지원자: ${data.name} (${data.student_id} / ${data.grade} / ${data.phone})`;
+    }
+
+    // Populate the hidden template elements first
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val || '-';
+    };
+
+    setVal('pdf-val-date', data.submit_date || new Date().toLocaleString('ko-KR'));
+    setVal('pdf-val-name', data.name);
+    setVal('pdf-val-student-id', data.student_id);
+    setVal('pdf-val-grade', data.grade);
+    setVal('pdf-val-phone', data.phone);
+    setVal('pdf-val-military', data.military);
+
+    setVal('pdf-val-tech', data.tech_stack || '없음');
+    setVal('pdf-val-activity', data.desired_activities || '없음');
+    setVal('pdf-val-interview', data.interview_available_times);
+    setVal('pdf-val-portfolio', data.portfolio_links || '없음');
+
+    setVal('pdf-val-keyword', data.keyword_intro);
+    setVal('pdf-val-motivation', data.motivation);
+
+    setVal('pdf-val-page2-name', data.name);
+    setVal('pdf-val-page2-student-id', data.student_id);
+    setVal('pdf-val-problem', data.problem_solving);
+    setVal('pdf-val-study', data.study_plan);
+    setVal('pdf-val-expectation', data.expectation);
+    setVal('pdf-val-career', data.career_plan);
+
+    setVal('pdf-val-sign-date', `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월 ${new Date().getDate()}일`);
+    setVal('pdf-val-sign-name', data.name);
+
+    // Clone pages into viewer container with paper shadow
+    const page1 = document.getElementById('pdf-page-1');
+    const page2 = document.getElementById('pdf-page-2');
+
+    container.innerHTML = '';
+    if (page1 && page2) {
+      const clone1 = page1.cloneNode(true);
+      clone1.id = 'viewer-clone-page-1';
+      clone1.style.display = 'block';
+      clone1.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 15px rgba(0,0,0,0.4)';
+      clone1.style.borderRadius = '2px';
+      clone1.style.maxWidth = '100%';
+
+      const clone2 = page2.cloneNode(true);
+      clone2.id = 'viewer-clone-page-2';
+      clone2.style.display = 'block';
+      clone2.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 15px rgba(0,0,0,0.4)';
+      clone2.style.borderRadius = '2px';
+      clone2.style.maxWidth = '100%';
+
+      container.appendChild(clone1);
+      container.appendChild(clone2);
+    }
+
+    // Bind action buttons
+    if (downloadBtn) {
+      downloadBtn.onclick = async () => {
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>PDF 생성 중...</span>';
+        await generateApplicationPDF(data);
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i><span>공식 PDF 다운로드</span>';
+      };
+    }
+
+    if (printBtn) {
+      printBtn.onclick = () => window.print();
+    }
+
+    if (closeBtn) {
+      closeBtn.onclick = () => modal.classList.remove('active');
+    }
+
+    modal.classList.add('active');
+  }
+
+  function checkAndOpenViewer() {
+    try {
+      let raw = '';
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('view_app')) {
+        raw = searchParams.get('view_app');
+      } else if (window.location.hash) {
+        const hashStr = window.location.hash.replace(/^#\/?/, '');
+        const hashParams = new URLSearchParams(hashStr);
+        if (hashParams.has('view_app')) {
+          raw = hashParams.get('view_app');
+        }
+      }
+
+      if (raw) {
+        const data = decodeApplicantData(raw);
+        if (data && (data.name || data.student_id)) {
+          openApplicantViewerModal(data);
+        }
+      }
+    } catch (err) {
+      console.warn('Applicant viewer check warning:', err);
+    }
   }
 
   function blobToBase64(blob) {
@@ -535,64 +775,56 @@
     const data = collectFormData();
 
     // 1. Loading state: Generating PDF and sending notification
-    setLoadingState(true, '지원서 공식 양식 PDF 생성 및 전송 중...');
-
-    // 2. Construct robust Formspree payload with sender email & clean keys
-    const emailSubject = `[AIONE LAB 2026 연구원 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
-    const formspreePayload = {
-      _subject: emailSubject,
-      email: CONTACT_EMAIL,
-      _replyto: CONTACT_EMAIL,
-      applicant_name: data.name,
-      applicant_id: data.student_id,
-      applicant_grade: data.grade,
-      applicant_phone: data.phone,
-      applicant_military: data.military,
-      "1_성명": data.name,
-      "2_학번": data.student_id,
-      "3_지원구분_학년": data.grade,
-      "4_연락처": data.phone,
-      "5_병역구분": data.military,
-      "6_나를_표현하는_단어_이유": data.keyword_intro,
-      "7_지원동기": data.motivation,
-      "8_문제해결경험": data.problem_solving,
-      "9_학업계획": data.study_plan,
-      "10_얻고자하는것": data.expectation,
-      "11_진로계획": data.career_plan,
-      "12_기술스택_경험": data.tech_stack || "없음",
-      "13_연구실_희망활동": data.desired_activities || "없음",
-      "14_면접가능시간": data.interview_available_times,
-      "15_포트폴리오링크": data.portfolio_links || "없음",
-      "16_공식_지원서_PDF": `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf (지원자 PC 다운로드 완료)`,
-      "17_접수일시": new Date().toLocaleString('ko-KR')
-    };
+    setLoadingState(true, '지원서 공식 양식 PDF 생성 중...');
 
     try {
-      // Step A & Step B: Concurrent execution of Formspree email dispatch & PDF generation
-      const formspreePromise = fetch(FORMSPREE_ENDPOINT, {
+      // Step A: Generate PDF and auto-download 2-page document to applicant PC
+      const pdfResult = await generateApplicationPDF(data);
+      const filename = pdfResult?.filename || `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
+
+      // Step B: Create Permanent Online PDF Viewing Link (never expires, 100% CORS-safe)
+      const viewerUrl = createApplicantViewerLink(data);
+
+      setLoadingState(true, '지원서 내역 이메일 발송 중...');
+
+      // Step C: Construct Formspree payload with direct PDF viewing link prominently featured
+      const emailSubject = `[AIONE LAB 2026 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
+      const formspreePayload = {
+        _subject: emailSubject,
+        email: CONTACT_EMAIL,
+        _replyto: CONTACT_EMAIL,
+        "생성된_지원서_공식_PDF_열람링크": viewerUrl,
+        "1_성명": data.name,
+        "2_학번": data.student_id,
+        "3_지원구분_학년": data.grade,
+        "4_연락처": data.phone,
+        "5_병역구분": data.military,
+        "6_나를_표현하는_단어_이유": data.keyword_intro,
+        "7_지원동기": data.motivation,
+        "8_문제해결경험": data.problem_solving,
+        "9_학업계획": data.study_plan,
+        "10_얻고자하는것": data.expectation,
+        "11_진로계획": data.career_plan,
+        "12_기술스택_경험": data.tech_stack || "없음",
+        "13_연구실_희망활동": data.desired_activities || "없음",
+        "14_면접가능시간": data.interview_available_times,
+        "15_포트폴리오링크": data.portfolio_links || "없음",
+        "16_공식_지원서_PDF": `${filename} (지원자 PC 다운로드 완료 / 위 열람링크에서 언제든 PDF 열람 및 재다운로드 가능)`,
+        "17_접수일시": new Date().toLocaleString('ko-KR')
+      };
+
+      const response = await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify(formspreePayload)
-      }).then(async (res) => {
-        console.log('Formspree response status:', res.status);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          console.warn('Formspree response warning:', errData);
-        }
-        return res;
-      }).catch((err) => {
-        console.warn('Formspree network warning:', err);
-        return null;
       });
 
-      const pdfPromise = generateApplicationPDF(data);
+      console.log('Formspree response status:', response.status);
 
-      const [formspreeRes, pdfResult] = await Promise.all([formspreePromise, pdfPromise]);
-
-      // Step C. If Google Apps Script WebApp is configured, send actual PDF attachment
+      // Step D. If Google Apps Script WebApp is configured, send actual PDF attachment
       if (GOOGLE_APPS_SCRIPT_URL && pdfResult?.pdfBlob) {
         try {
           const pdfBase64 = await blobToBase64(pdfResult.pdfBlob);
@@ -713,8 +945,9 @@
     }
   }
 
-  // Auto-restore draft on DOM ready
+  // Auto-restore draft & check online applicant viewer on DOM ready
   document.addEventListener('DOMContentLoaded', () => {
     restoreDraft();
+    checkAndOpenViewer();
   });
 })();
