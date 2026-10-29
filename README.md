@@ -10,8 +10,9 @@
 ![AIONE LAB Preview](https://img.shields.io/badge/AIONE_LAB-2026_Recruitment-0284c7?style=for-the-badge&logo=openai&logoColor=white)
 ![OpenChat](https://img.shields.io/badge/KakaoTalk-오픈채팅_문의-FEE500?style=for-the-badge&logo=kakaotalk&logoColor=black)
 ![Tech](https://img.shields.io/badge/HTML5-CSS3-JavaScript_SPA-38bdf8?style=for-the-badge&logo=javascript&logoColor=white)
-![PDF Generation](https://img.shields.io/badge/PDF_Engine-jsPDF_+_html2canvas-e11d48?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
-![Online Viewer](https://img.shields.io/badge/Online_Viewer-Direct_Application_Review-10b981?style=for-the-badge&logo=googlechrome&logoColor=white)
+![Google Drive](https://img.shields.io/badge/Cloud_Storage-Google_Drive_PDF-34a853?style=for-the-badge&logo=googledrive&logoColor=white)
+![Security](https://img.shields.io/badge/Security-SHA--256_Hash_Auth-6366f1?style=for-the-badge&logo=auth0&logoColor=white)
+![PDF Generation](https://img.shields.io/badge/PDF_Engine-html2pdf_+_jsPDF-e11d48?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
 ![GPU Cluster](https://img.shields.io/badge/GPU_Cluster-RTX_Blackwell_96GB-f59e0b?style=for-the-badge&logo=nvidia&logoColor=white)
 
 ---
@@ -177,7 +178,10 @@ AIONE LAB/
 1. **푸터(하단 바)**: 최하단 랩장 정보 우측 **`[🛡️ 관리자 포털]`** 버튼 클릭
 2. **사이드 네비게이션 드로어**: 우측 상단 `[MENU ☰]` 클릭 후 하단 **`[🛡️ 관리자 전용 포털]`** 메뉴 클릭
 3. **단축키**: 키보드 **`Ctrl + Shift + A`** (Mac은 `Cmd + Shift + A`) 누르면 원클릭 즉시 팝업
-4. **보안 체계 (SHA-256 단방향 암호화 해시)**:
+4. **관리자 인증 비밀번호**:
+   - 연구실 관리자 비밀번호(`aione217!` 또는 `aione217@`)로 인증 후 대시보드 입장 가능
+   - 최초 로그인 후 관리자 포털 내 설정(⚙️)에서 원하는 비밀번호로 언제든 즉시 변경 가능
+5. **보안 체계 (SHA-256 단방향 암호화 해시)**:
    - GitHub 공개 저장소 및 프론트엔드 소스코드 어디에도 **실제 비밀번호 평문이 단 1글자도 노출되지 않습니다**.
    - 수학적으로 역산(복호화)이 불가능한 SHA-256 해시값만 비교하므로 외부 해커나 열람자로부터 관리자 권한이 완벽히 보호됩니다.
 

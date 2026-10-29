@@ -17,8 +17,11 @@ const DRIVE_FOLDER_ID = '1MpmUBVRdnnOnz9AQByEbG1Kc25fMWy8R';
 // 2. 알림 수신 랩장 이메일 주소
 const NOTIFICATION_EMAIL = 'och7905@naver.com';
 
-// 3. 관리자 기본 비밀번호 SHA-256 단방향 암호화 해시 (복호화 불가, 평문 미노출)
-const DEFAULT_ADMIN_PASSWORD_HASH = '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c';
+// 3. 관리자 기본 비밀번호 SHA-256 단방향 암호화 해시 목록 (aione217! 및 aione217@ 지원, 복호화 불가)
+const DEFAULT_ADMIN_PASSWORD_HASHES = [
+  '29a5db2f91e94992bc857c198836c04ffc0b375a0df0835d3c73d6a3419e8c50', // aione217!
+  '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c'  // aione217@
+];
 
 // 4. 스프레드시트 시트 이름
 const SHEET_NAME = '지원자명단';
@@ -55,46 +58,67 @@ function doPost(e) {
     const portfolioLinks = (data.portfolio_links || '없음').trim();
     const submitDate = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. MM. dd HH:mm');
 
-    // Step A. 정식 규격 지원서 HTML 문서 구성
-    const htmlTemplate = buildApplicationHtml({
-      name,
-      studentId,
-      grade,
-      phone,
-      military,
-      keywordIntro,
-      motivation,
-      problemSolving,
-      studyPlan,
-      expectation,
-      careerPlan,
-      techStack,
-      desiredActivities,
-      interviewTimes,
-      portfolioLinks,
-      submitDate
-    });
-
-    // Step B. HTML -> Blob -> PDF 바이너리 변환
-    const pdfBlob = HtmlService.createHtmlOutput(htmlTemplate)
-      .getAs('application/pdf')
-      .setName('AIONE_지원서_' + studentId + '_' + name + '.pdf');
-
-    // Step C. 구글 드라이브 지정 폴더에 PDF 저장
+    // Step A. 구글 드라이브 지정 폴더 접근
     let driveFolder;
     try {
       driveFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
     } catch (folderErr) {
+      Logger.log('Drive folder get error, fallback to root: ' + folderErr);
       driveFolder = DriveApp.getRootFolder();
     }
-    const pdfFile = driveFolder.createFile(pdfBlob);
 
-    // 열람 권한: 링크가 있는 모든 사용자 열람 가능
-    try {
-      pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    } catch (_) {}
+    const pdfFileName = 'AIONE_지원서_' + studentId + '_' + name + '.pdf';
+    let pdfFile = null;
 
-    const pdfUrl = pdfFile.getUrl();
+    // Step B-1. 프론트엔드에서 2-Page 공식 PDF 바이너리(Base64)가 전달된 경우 (100% 무손실 복원)
+    if (data.pdf_base64 && String(data.pdf_base64).length > 50) {
+      try {
+        const decodedBytes = Utilities.base64Decode(data.pdf_base64);
+        const restoredBlob = Utilities.newBlob(decodedBytes, 'application/pdf', pdfFileName);
+        pdfFile = driveFolder.createFile(restoredBlob);
+      } catch (decodeErr) {
+        Logger.log('Base64 decode warning: ' + decodeErr);
+      }
+    }
+
+    // Step B-2. Base64가 없거나 실패한 경우 GAS 자체 HTML -> PDF 엔진 실행 (Fallback)
+    if (!pdfFile) {
+      try {
+        const htmlTemplate = buildApplicationHtml({
+          name,
+          studentId,
+          grade,
+          phone,
+          military,
+          keywordIntro,
+          motivation,
+          problemSolving,
+          studyPlan,
+          expectation,
+          careerPlan,
+          techStack,
+          desiredActivities,
+          interviewTimes,
+          portfolioLinks,
+          submitDate
+        });
+        const fallbackBlob = HtmlService.createHtmlOutput(htmlTemplate)
+          .getAs('application/pdf')
+          .setName(pdfFileName);
+        pdfFile = driveFolder.createFile(fallbackBlob);
+      } catch (htmlErr) {
+        Logger.log('HTML to PDF fallback warning: ' + htmlErr);
+      }
+    }
+
+    // Step C. 열람 권한 부여 및 열람 URL 획득
+    let pdfUrl = '';
+    if (pdfFile) {
+      try {
+        pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch (_) {}
+      pdfUrl = pdfFile.getUrl();
+    }
 
     // Step D. 랩장 이메일로 즉시 알림 발송
     sendLeaderNotification({
@@ -575,34 +599,41 @@ function getTargetSheet() {
   if (!ss) return null;
 
   let sheet = ss.getSheetByName(SHEET_NAME);
+  const headers = [
+    '접수일시',
+    '성명',
+    '학번',
+    '지원구분',
+    '연락처',
+    '병역구분',
+    '나를표현하는단어',
+    '지원동기',
+    '문제해결경험',
+    '학업계획',
+    '얻고자하는것',
+    '진로계획',
+    '기술스택',
+    '연구실희망활동',
+    '면접가능시간',
+    '포트폴리오링크',
+    '드라이브PDF열람',
+    'PDF원본URL'
+  ];
+
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-    // 시트 헤더 초기화
-    const headers = [
-      '접수일시',
-      '성명',
-      '학번',
-      '지원구분',
-      '연락처',
-      '병역구분',
-      '나를표현하는단어',
-      '지원동기',
-      '문제해결경험',
-      '학업계획',
-      '얻고자하는것',
-      '진로계획',
-      '기술스택',
-      '연구실희망활동',
-      '면접가능시간',
-      '포트폴리오링크',
-      '구글드라이브PDF링크'
-    ];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length)
       .setBackground('#0284c7')
       .setFontColor('#ffffff')
       .setFontWeight('bold');
     sheet.setFrozenRows(1);
+  } else {
+    // 기존 시트의 17, 18번째 헤더 최신화 보장
+    try {
+      sheet.getRange(1, 17).setValue('드라이브PDF열람');
+      sheet.getRange(1, 18).setValue('PDF원본URL');
+    } catch (_) {}
   }
   return sheet;
 }
@@ -611,6 +642,8 @@ function appendApplicantToSheet(item) {
   try {
     const sheet = getTargetSheet();
     if (!sheet) return;
+
+    const hyperlinkFormula = item.pdfUrl ? '=HYPERLINK("' + item.pdfUrl + '", "📄 PDF 열람")' : '저장 실패';
 
     sheet.appendRow([
       item.submitDate,
@@ -629,7 +662,8 @@ function appendApplicantToSheet(item) {
       item.desiredActivities,
       item.interviewTimes,
       item.portfolioLinks,
-      item.pdfUrl
+      hyperlinkFormula,
+      item.pdfUrl || ''
     ]);
   } catch (err) {
     Logger.log('Spreadsheet appendRow warning: ' + err);
@@ -644,7 +678,7 @@ function fetchApplicantsFromSheet() {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return [];
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
+    const data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
     const result = [];
 
     for (let i = data.length - 1; i >= 0; i--) {
@@ -668,7 +702,7 @@ function fetchApplicantsFromSheet() {
         desired_activities: row[13] ? String(row[13]) : '',
         interview_available_times: row[14] ? String(row[14]) : '',
         portfolio_links: row[15] ? String(row[15]) : '',
-        pdf_url: row[16] ? String(row[16]) : ''
+        pdf_url: row[17] ? String(row[17]) : (row[16] ? String(row[16]) : '')
       });
     }
 
@@ -708,8 +742,11 @@ function deleteApplicantFromSheet(studentId, name) {
 function verifyAdminPassword(entered) {
   if (!entered) return false;
   const enteredHash = computeSha256(entered);
-  const storedHash = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD_HASH') || DEFAULT_ADMIN_PASSWORD_HASH;
-  return enteredHash === storedHash || entered === storedHash;
+  const storedHash = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD_HASH');
+  if (storedHash) {
+    return enteredHash === storedHash || entered === storedHash;
+  }
+  return DEFAULT_ADMIN_PASSWORD_HASHES.indexOf(enteredHash) !== -1;
 }
 
 function computeSha256(str) {

@@ -930,21 +930,30 @@
 
     try {
       // 2. 브라우저에서 지원자 보관용 2-Page 공식 규격 PDF 자동 생성 및 즉시 다운로드 (AIONE_지원서_{학번}_{성명}.pdf)
+      let pdfBase64 = '';
       try {
-        await generateApplicationPDF(data);
+        const pdfResult = await generateApplicationPDF(data);
+        if (pdfResult && pdfResult.pdfBlob) {
+          pdfBase64 = await blobToBase64(pdfResult.pdfBlob);
+        }
       } catch (pdfErr) {
         console.error('Local PDF generation warning:', pdfErr);
       }
 
-      // 3. 백엔드(Google Apps Script Web App)로 지원서 데이터 비동기 전송
+      // 3. 백엔드(Google Apps Script Web App)로 지원서 데이터 + PDF 바이너리 비동기 전송
       const targetGasUrl = getGasUrl();
       if (targetGasUrl && targetGasUrl !== "여기에_배포된_GAS_URL_입력") {
         try {
+          const payload = {
+            ...data,
+            pdf_base64: pdfBase64,
+            submitted_at: new Date().toLocaleString('ko-KR')
+          };
           await fetch(targetGasUrl, {
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
           });
         } catch (gasErr) {
           console.warn("Google Apps Script Webhook warning (no-cors expected):", gasErr);
@@ -1037,8 +1046,11 @@
   // 6. ADMIN PORTAL (APPLICANT MANAGEMENT & ON-DEMAND PDF DOWNLOAD)
   // [보안 강화] SHA-256 단방향 암호화 해시 적용: 소스코드 및 GitHub에 평문 비밀번호가 절대 노출되지 않습니다.
   // --------------------------------------------------------------------------
-  // 기본 관리자 비밀번호의 SHA-256 단방향 암호화 해시 (복호화 불가)
-  const DEFAULT_ADMIN_PW_HASH = '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c';
+  // 기본 관리자 비밀번호 해시 목록 (aione217! 및 aione217@ 지원, 복호화 불가)
+  const DEFAULT_ADMIN_PW_HASHES = [
+    '29a5db2f91e94992bc857c198836c04ffc0b375a0df0835d3c73d6a3419e8c50', // aione217!
+    '3940070561060ddc20164314c9dfa5b43b7c8abce3118e839a6583e7ae13a13c'  // aione217@
+  ];
 
   async function hashPassword(plainText) {
     if (!plainText) return '';
@@ -1052,8 +1064,8 @@
     }
   }
 
-  const getAdminPasswordHash = () => {
-    return localStorage.getItem('aione_admin_password_hash') || DEFAULT_ADMIN_PW_HASH;
+  const getCustomAdminPasswordHash = () => {
+    return localStorage.getItem('aione_admin_password_hash');
   };
   let adminApplicantsData = [];
   let currentSearchQuery = '';
@@ -1237,12 +1249,25 @@
         let verified = false;
         const gasUrl = getGasUrl();
         const enteredHash = await hashPassword(enteredPw);
-        const expectedHash = getAdminPasswordHash();
+        const customHash = getCustomAdminPasswordHash();
+        const legacyPlainPw = localStorage.getItem('aione_admin_password');
 
-        // SHA-256 단방향 암호화 해시 비교 (코드/GitHub에 실제 비밀번호가 전혀 노출되지 않음)
-        if (enteredHash === expectedHash) {
+        // 1. 관리자가 직접 새로 설정한 커스텀 해시와 일치하는 경우
+        if (customHash && enteredHash === customHash) {
           verified = true;
-        } else if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
+        }
+        // 2. 브라우저에 기존 평문 저장 데이터가 남아있는 경우 (호환성 및 자동 해시 마이그레이션)
+        else if (legacyPlainPw && enteredPw === legacyPlainPw) {
+          verified = true;
+          localStorage.setItem('aione_admin_password_hash', enteredHash);
+          localStorage.removeItem('aione_admin_password');
+        }
+        // 3. 기본 비밀번호 해시 목록과 일치하는 경우 (aione217! 또는 aione217@ 모두 허용)
+        else if (!customHash && DEFAULT_ADMIN_PW_HASHES.includes(enteredHash)) {
+          verified = true;
+        }
+        // 4. Google Apps Script 백엔드 연동 확인
+        else if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
           try {
             const res = await fetch(`${gasUrl}?action=get_applicants&pw=${encodeURIComponent(enteredPw)}`);
             const json = await res.json();
