@@ -31,6 +31,40 @@ const DEFAULT_ADMIN_PASSWORD_HASHES = [
 // 4. 스프레드시트 시트 이름
 const SHEET_NAME = '지원자명단';
 
+/**
+ * [구글 드라이브 폴더 취득 헬퍼]
+ * 1) 설정된 DRIVE_FOLDER_ID로 우선 접근
+ * 2) 만약 ID 오류나 접근권한 문제가 발생할 경우, 현재 스프레드시트가 위치한 상위 폴더를 자동 감지하여 동일 폴더에 100% 저장
+ * 3) 최후의 수단으로 루트 폴더 사용
+ */
+function getApplicationDriveFolder() {
+  if (DRIVE_FOLDER_ID && DRIVE_FOLDER_ID.length > 10) {
+    try {
+      var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+      if (folder) return folder;
+    } catch (e) {
+      Logger.log('Drive folder getById warning: ' + e);
+    }
+  }
+
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      var ssFile = DriveApp.getFileById(ss.getId());
+      var parents = ssFile.getParents();
+      if (parents.hasNext()) {
+        var parentFolder = parents.next();
+        Logger.log('Auto-detected spreadsheet parent folder: ' + parentFolder.getName());
+        return parentFolder;
+      }
+    }
+  } catch (e) {
+    Logger.log('Spreadsheet parent folder detection warning: ' + e);
+  }
+
+  return DriveApp.getRootFolder();
+}
+
 
 /**
  * ----------------------------------------------------------------------------
@@ -64,13 +98,7 @@ function doPost(e) {
     const submitDate = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. MM. dd HH:mm');
 
     // Step A. 구글 드라이브 지정 폴더 접근
-    let driveFolder;
-    try {
-      driveFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    } catch (folderErr) {
-      Logger.log('Drive folder get error, fallback to root: ' + folderErr);
-      driveFolder = DriveApp.getRootFolder();
-    }
+    const driveFolder = getApplicationDriveFolder();
 
     const pdfFileName = 'AIONE_지원서_' + studentId + '_' + name + '.pdf';
     let pdfFile = null;
@@ -86,6 +114,7 @@ function doPost(e) {
         const decodedBytes = Utilities.base64Decode(rawB64);
         const restoredBlob = Utilities.newBlob(decodedBytes, 'application/pdf', pdfFileName);
         pdfFile = driveFolder.createFile(restoredBlob);
+        Logger.log('Successfully created PDF from base64: ' + pdfFileName);
       } catch (decodeErr) {
         Logger.log('Base64 decode warning: ' + decodeErr);
       }
@@ -112,10 +141,23 @@ function doPost(e) {
           portfolioLinks,
           submitDate
         });
-        const fallbackBlob = HtmlService.createHtmlOutput(htmlTemplate)
-          .getAs('application/pdf')
-          .setName(pdfFileName);
-        pdfFile = driveFolder.createFile(fallbackBlob);
+
+        let fallbackBlob = null;
+        try {
+          fallbackBlob = Utilities.newBlob(htmlTemplate, 'text/html', 'app.html')
+            .getAs('application/pdf')
+            .setName(pdfFileName);
+        } catch (blobErr) {
+          Logger.log('Utilities.newBlob fallback error: ' + blobErr);
+          fallbackBlob = HtmlService.createHtmlOutput(htmlTemplate)
+            .getAs('application/pdf')
+            .setName(pdfFileName);
+        }
+
+        if (fallbackBlob) {
+          pdfFile = driveFolder.createFile(fallbackBlob);
+          Logger.log('Successfully created PDF from HTML fallback: ' + pdfFileName);
+        }
       } catch (htmlErr) {
         Logger.log('HTML to PDF fallback warning: ' + htmlErr);
       }
@@ -401,9 +443,6 @@ function buildApplicationHtml(data) {
         border-bottom: 2px solid #0284c7;
         padding-bottom: 8px;
         margin-bottom: 12px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
       }
       .page-title {
         font-size: 18px;
@@ -602,10 +641,12 @@ function buildApplicationHtml(data) {
       </div>
     </div>
 
-    <div class="footer-note">
-      <span>대전대학교 서문 방면 융합과학관 217호 &amp; 330호 (전승현 지도교수 / 오창현 랩장)</span>
-      <span>AIONE LAB 2026 OFFICIAL FORM</span>
-    </div>
+    <table style="width: 100%; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 6px; font-size: 9px; color: #94a3b8;">
+      <tr>
+        <td>대전대학교 서문 방면 융합과학관 217호 &amp; 330호 (전승현 지도교수 / 오창현 랩장)</td>
+        <td style="text-align: right;">AIONE LAB 2026 OFFICIAL FORM</td>
+      </tr>
+    </table>
   </body>
   </html>
   `;
@@ -735,12 +776,7 @@ function repairBrokenRows() {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return;
 
-    var driveFolder;
-    try {
-      driveFolder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    } catch (_) {
-      driveFolder = DriveApp.getRootFolder();
-    }
+    var driveFolder = getApplicationDriveFolder();
 
     const numRows = lastRow - 1;
     const values = sheet.getRange(2, 1, numRows, 18).getValues();
@@ -764,8 +800,24 @@ function repairBrokenRows() {
             var f = files.next();
             try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
             pdfUrl = f.getUrl();
-          } else {
-            // 2) 없으면 지원서 공식 2-Page PDF 즉시 컴파일 & 드라이브 저장
+          } else if (parsed.pdf_base64 && String(parsed.pdf_base64).length > 50) {
+            // 2) JSON에 Base64가 포함되어 있는 경우 무손실 복원
+            try {
+              var rawB64 = String(parsed.pdf_base64).trim();
+              if (rawB64.indexOf(',') !== -1) rawB64 = rawB64.split(',')[1];
+              rawB64 = rawB64.replace(/\s/g, '');
+              var decodedBytes = Utilities.base64Decode(rawB64);
+              var b64Blob = Utilities.newBlob(decodedBytes, 'application/pdf', pdfFileName);
+              var b64File = driveFolder.createFile(b64Blob);
+              try { b64File.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+              pdfUrl = b64File.getUrl();
+            } catch (b64Err) {
+              Logger.log('Base64 restore warning: ' + b64Err);
+            }
+          }
+
+          // 3) 없으면 지원서 공식 2-Page PDF 컴파일 & 드라이브 저장
+          if (!pdfUrl) {
             var html = buildApplicationHtml({
               name: sName,
               studentId: sId,
@@ -784,10 +836,19 @@ function repairBrokenRows() {
               portfolioLinks: parsed.portfolio_links || String(values[i][15] || '없음'),
               submitDate: String(values[i][0] || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy. MM. dd HH:mm'))
             });
-            var blob = HtmlService.createHtmlOutput(html).getAs('application/pdf').setName(pdfFileName);
-            var created = driveFolder.createFile(blob);
-            try { created.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
-            pdfUrl = created.getUrl();
+
+            var blob = null;
+            try {
+              blob = Utilities.newBlob(html, 'text/html', 'app.html').getAs('application/pdf').setName(pdfFileName);
+            } catch (_) {
+              blob = HtmlService.createHtmlOutput(html).getAs('application/pdf').setName(pdfFileName);
+            }
+
+            if (blob) {
+              var created = driveFolder.createFile(blob);
+              try { created.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (_) {}
+              pdfUrl = created.getUrl();
+            }
           }
 
           if (pdfUrl) {
@@ -1072,11 +1133,68 @@ function escapeHtml(str) {
  * ----------------------------------------------------------------------------
  */
 function testRepairAndDiagnose() {
+  Logger.log('=== [AIONE LAB] 자가 진단 및 복구 시작 ===');
+  const folder = getApplicationDriveFolder();
+  Logger.log('연결된 구글 드라이브 폴더: ' + folder.getName() + ' (ID: ' + folder.getId() + ')');
+
   repairBrokenRows();
+
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     if (ss) {
-      ss.toast('✅ 기존 지원자의 드라이브 PDF 생성 및 열람 링크 복구가 완료되었습니다!', 'AIONE LAB', 5);
+      ss.toast('✅ 기존 지원자의 드라이브 PDF 생성 및 열람 링크 복구가 완료되었습니다! (폴더: ' + folder.getName() + ')', 'AIONE LAB 복구 완료', 7);
+    }
+  } catch (_) {}
+
+  Logger.log('=== [AIONE LAB] 자가 진단 및 복구 완료 ===');
+}
+
+/**
+ * ----------------------------------------------------------------------------
+ * [원클릭 드라이브 PDF 연동 자체 테스트 함수]
+ * Apps Script 편집기 상단 함수 선택창에서 'testCreateDrivePdfDirectly'를 선택 후 [실행]을 누르면
+ * 지정된 구글 드라이브 폴더에 즉시 테스트용 PDF를 1개 생성하여 연동 상태를 확인합니다.
+ * ----------------------------------------------------------------------------
+ */
+function testCreateDrivePdfDirectly() {
+  Logger.log('=== [AIONE LAB] 구글 드라이브 연동 직접 테스트 시작 ===');
+  const folder = getApplicationDriveFolder();
+  const testFileName = 'AIONE_연동확인테스트_' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd_HHmmss') + '.pdf';
+
+  const testHtml = `
+    <!DOCTYPE html>
+    <html>
+      <body style="font-family: sans-serif; padding: 40px; text-align: center; color: #0f172a;">
+        <h1 style="color: #0284c7; margin-bottom: 8px;">AIONE LAB 구글 드라이브 연동 테스트 성공!</h1>
+        <p style="font-size: 14px; color: #334155;">이 PDF 파일이 구글 드라이브 폴더에 보인다면 시스템 연동이 100% 정상 작동 중입니다.</p>
+        <div style="margin: 20px auto; padding: 15px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; max-width: 480px; text-align: left; font-size: 12px;">
+          <p style="margin: 4px 0;"><strong>📁 저장 폴더명:</strong> ${folder.getName()}</p>
+          <p style="margin: 4px 0;"><strong>🆔 폴더 ID:</strong> ${folder.getId()}</p>
+          <p style="margin: 4px 0;"><strong>⏰ 생성 일시:</strong> ${Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy년 MM월 dd일 HH시 mm분 ss초')}</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  let blob = null;
+  try {
+    blob = Utilities.newBlob(testHtml, 'text/html', 'test.html').getAs('application/pdf').setName(testFileName);
+  } catch (_) {
+    blob = HtmlService.createHtmlOutput(testHtml).getAs('application/pdf').setName(testFileName);
+  }
+
+  const file = folder.createFile(blob);
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (_) {}
+
+  Logger.log('✅ 테스트 PDF 생성 성공: ' + file.getName());
+  Logger.log('열람 URL: ' + file.getUrl());
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      ss.toast('🎉 [' + folder.getName() + '] 폴더에 테스트 PDF가 생성되었습니다! 드라이브를 확인하세요.', '드라이브 연동 성공', 6);
     }
   } catch (_) {}
 }
