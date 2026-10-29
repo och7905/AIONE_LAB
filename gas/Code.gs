@@ -14,8 +14,13 @@
 // 1. 연구실 구글 드라이브 폴더 ID (AIONE LAB 지원서 보관용)
 const DRIVE_FOLDER_ID = '1MpmUBVRdnnOnz9AQByEbG1Kc25fMWy8R';
 
-// 2. 알림 수신 랩장 이메일 주소
-const NOTIFICATION_EMAIL = 'och7905@naver.com';
+// 2. 알림 수신 이메일 주소 목록 (단일 문자열, 쉼표 구분 문자열, 또는 배열[] 모두 지원)
+// 예시 1: ['och7905@naver.com', 'creemur@dju.kr'] (배열 형태 - 추천)
+// 예시 2: 'och7905@naver.com, creemur@dju.kr' (쉼표 구분 문자열 형태)
+const NOTIFICATION_EMAILS = [
+  'och7905@naver.com' // 오창현 랩장 (필요 시 여기에 쉼표 후 '추가이메일@...' 추가)
+];
+const NOTIFICATION_EMAIL = NOTIFICATION_EMAILS; // 하위 호환성 유지 변수
 
 // 3. 관리자 기본 비밀번호 SHA-256 단방향 암호화 해시 목록 (aione217! 및 aione217@ 지원, 복호화 불가)
 const DEFAULT_ADMIN_PASSWORD_HASHES = [
@@ -350,8 +355,12 @@ function sendLeaderNotification(info) {
     </div>
   `;
 
+  // 이메일 수신자 파싱 (배열 또는 쉼표 구분 문자열 지원)
+  var targetEmails = (typeof NOTIFICATION_EMAILS !== 'undefined' ? NOTIFICATION_EMAILS : NOTIFICATION_EMAIL);
+  var recipientString = Array.isArray(targetEmails) ? targetEmails.join(',') : String(targetEmails || 'och7905@naver.com');
+
   MailApp.sendEmail({
-    to: NOTIFICATION_EMAIL,
+    to: recipientString,
     subject: subject,
     htmlBody: htmlBody
   });
@@ -713,14 +722,20 @@ function syncDriveAndSheet() {
     // 1. 구글 드라이브 폴더 내 활성(휴지통 제외) 파일 목록 수집
     var activeFileIds = {};
     var activeFileNames = {};
+    var pdfCountInFolder = 0;
     try {
       var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
       var files = folder.getFiles();
       while (files.hasNext()) {
         var file = files.next();
         if (!file.isTrashed()) {
-          activeFileIds[file.getId()] = true;
-          activeFileNames[file.getName()] = true;
+          var fId = file.getId();
+          var fName = file.getName();
+          activeFileIds[fId] = true;
+          activeFileNames[fName] = true;
+          if (fName.toLowerCase().indexOf('.pdf') !== -1) {
+            pdfCountInFolder++;
+          }
         }
       }
     } catch (driveErr) {
@@ -728,50 +743,75 @@ function syncDriveAndSheet() {
       return; // 드라이브 접근 오류 시 안전을 위해 행을 삭제하지 않음
     }
 
-    // 2. 시트의 각 행을 역순으로 검사 (행 삭제 시 인덱스 밀림 방지)
-    var data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
+    // 2. 시트의 데이터와 수식(Formula)을 모두 가져옴 (Column Q의 =HYPERLINK 분석용)
+    var numRows = lastRow - 1;
+    var values = sheet.getRange(2, 1, numRows, 18).getValues();
+    var formulas = sheet.getRange(2, 1, numRows, 18).getFormulas();
 
-    for (var i = data.length - 1; i >= 0; i--) {
-      var row = data[i];
+    for (var i = numRows - 1; i >= 0; i--) {
+      var row = values[i];
+      var formulaRow = formulas[i];
+
       var name = String(row[1] || '').trim();
       var studentId = String(row[2] || '').trim();
-      var pdfUrl = String(row[17] || row[16] || '').trim();
 
+      // 이름과 학번이 모두 비어있는 행은 지원자가 아님
       if (!name && !studentId) continue;
 
-      // 구글 드라이브에 PDF가 연동되었던 행인 경우
-      if (pdfUrl && pdfUrl.indexOf('drive.google.com') !== -1) {
+      // Column Q(수식 및 표시값)와 Column R(직접URL) 모두 취합
+      var colQVal = String(row[16] || '').trim();
+      var colQFormula = String(formulaRow[16] || '').trim();
+      var colRVal = String(row[17] || '').trim();
+      var colRFormula = String(formulaRow[17] || '').trim();
+
+      var combinedLink = [colQFormula, colQVal, colRVal, colRFormula].join(' ');
+
+      // 드라이브 연동 행인지 판별:
+      // A. drive.google.com URL이 포함되어 있거나
+      // B. HYPERLINK 수식이 걸려있거나
+      // C. 표시값이 "PDF" 관련 텍스트이거나
+      // D. 드라이브 폴더 내에 PDF 파일이 아예 0개인데 시트에만 행이 남아있는 경우
+      var isPdfLinkedRow = (
+        combinedLink.indexOf('drive.google.com') !== -1 ||
+        colQFormula.toUpperCase().indexOf('HYPERLINK') !== -1 ||
+        colQVal.indexOf('PDF') !== -1 ||
+        pdfCountInFolder === 0
+      );
+
+      if (isPdfLinkedRow) {
         var fileExists = false;
 
-        // A. URL 내 파일 ID로 활성 여부 확인
-        var match = pdfUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        // 1) URL 내 파일 ID 추출하여 드라이브 폴더 내 활성 여부 확인
+        var match = combinedLink.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
         if (match && match[1]) {
-          var fId = match[1];
-          if (activeFileIds[fId]) {
+          var targetId = match[1];
+          if (activeFileIds[targetId]) {
+            fileExists = true;
+          }
+        }
+
+        // 2) 파일명 패턴으로 확인 (예: AIONE_지원서_{학번}_{성명}.pdf)
+        if (!fileExists) {
+          var expectedName = 'AIONE_지원서_' + studentId + '_' + name + '.pdf';
+          if (activeFileNames[expectedName]) {
             fileExists = true;
           } else {
-            try {
-              var f = DriveApp.getFileById(fId);
-              if (f && !f.isTrashed()) {
-                fileExists = true;
+            // 학번 또는 이름이 포함된 PDF 파일이 폴더 내에 있는지 부분 검색
+            for (var fn in activeFileNames) {
+              if (fn.toLowerCase().indexOf('.pdf') !== -1) {
+                if ((studentId && studentId !== '학번미입력' && fn.indexOf(studentId) !== -1) ||
+                    (name && name !== '지원자' && fn.indexOf(name) !== -1)) {
+                  fileExists = true;
+                  break;
+                }
               }
-            } catch (_) {
-              fileExists = false;
             }
           }
         }
 
-        // B. 파일명 패턴으로 확인 (AIONE_지원서_{학번}_{성명}.pdf)
+        // 드라이브 폴더에 PDF가 존재하지 않는다면(사용자가 삭제했거나 휴지통으로 보냄), 시트에서 해당 행 자동 삭제
         if (!fileExists) {
-          var expectedFileName = 'AIONE_지원서_' + studentId + '_' + name + '.pdf';
-          if (activeFileNames[expectedFileName]) {
-            fileExists = true;
-          }
-        }
-
-        // 만약 드라이브에서 PDF가 삭제(또는 휴지통 이동)되었다면 시트에서도 해당 행 자동 삭제
-        if (!fileExists) {
-          Logger.log('Drive PDF missing, deleting row: ' + name + ' (' + studentId + ')');
+          Logger.log('Drive PDF missing, deleting row ' + (i + 2) + ': ' + name + ' (' + studentId + ')');
           sheet.deleteRow(i + 2);
         }
       }
@@ -835,19 +875,21 @@ function deleteApplicantFromSheet(studentId, name) {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return false;
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
+    const numRows = lastRow - 1;
+    const data = sheet.getRange(2, 1, numRows, 18).getValues();
+    const formulas = sheet.getRange(2, 1, numRows, 18).getFormulas();
 
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < numRows; i++) {
       const rowName = String(data[i][1] || '').trim();
       const rowId = String(data[i][2] || '').trim();
-      const pdfUrl = String(data[i][17] || data[i][16] || '').trim();
+      const combinedPdf = String(formulas[i][16] || '') + ' ' + String(data[i][17] || '') + ' ' + String(data[i][16] || '');
 
       if (rowId === studentId || (name && rowName === name)) {
         // 1. 스프레드시트에서 행 삭제
         sheet.deleteRow(i + 2);
 
         // 2. 구글 드라이브에서도 해당 PDF 파일 삭제(휴지통 이동)
-        deletePdfFromDrive(rowId, rowName, pdfUrl);
+        deletePdfFromDrive(rowId, rowName, combinedPdf);
         return true;
       }
     }
@@ -878,8 +920,11 @@ function deletePdfFromDrive(studentId, name, pdfUrl) {
       while (files.hasNext()) {
         const file = files.next();
         const fname = file.getName();
-        if ((studentId && fname.indexOf(studentId) !== -1) || (name && fname.indexOf(name) !== -1)) {
-          file.setTrashed(true);
+        if (fname.toLowerCase().indexOf('.pdf') !== -1) {
+          if ((studentId && studentId !== '학번미입력' && fname.indexOf(studentId) !== -1) || 
+              (name && name !== '지원자' && fname.indexOf(name) !== -1)) {
+            file.setTrashed(true);
+          }
         }
       }
     } catch (_) {}

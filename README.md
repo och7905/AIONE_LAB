@@ -231,7 +231,7 @@ AIONE LAB/
 1. 스프레드시트 상단 메뉴에서 **[확장 프로그램] > [Apps Script]**를 클릭합니다.
 2. 기존 코드를 모두 지우고, 프로젝트 내 [`gas/Code.gs`](file:///c:/Users/오창현/Desktop/AIONE%20LAB/gas/Code.gs) 코드 전체를 복사하여 붙여넣은 뒤 상단 **[저장(💾)]**을 누릅니다.
    - **지정 구글 드라이브 폴더**: `1MpmUBVRdnnOnz9AQByEbG1Kc25fMWy8R` (AIONE LAB 지원서 보관용)
-   - **알림 수신 이메일**: `och7905@naver.com` (오창현 랩장)
+   - **알림 수신 이메일 (`NOTIFICATION_EMAILS`)**: `['och7905@naver.com', '추가이메일@...']` (여러 명 설정 시 쉼표로 구분하여 배열 또는 문자열로 다중 수신 가능)
 
 #### [3단계] 웹 앱(Web App) 배포 & 권한 승인 (1회)
 1. 우측 상단의 파란색 **[배포] > [새 배포]** 버튼을 클릭합니다.
