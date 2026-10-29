@@ -707,7 +707,7 @@ function deleteApplicantFromSheet(studentId, name) {
 function verifyAdminPassword(entered) {
   if (!entered) return false;
   const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD') || DEFAULT_ADMIN_PASSWORD;
-  return entered === stored || entered === DEFAULT_ADMIN_PASSWORD;
+  return entered === stored;
 }
 
 function escapeHtml(str) {

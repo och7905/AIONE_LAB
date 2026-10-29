@@ -1105,7 +1105,7 @@
         changePwSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>변경 중...</span>';
 
         let gasSynced = false;
-        if (gasUrl) {
+        if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
           try {
             const syncUrl = `${gasUrl}?action=change_password&old_pw=${encodeURIComponent(currentPw)}&new_pw=${encodeURIComponent(newPw)}`;
             const res = await fetch(syncUrl);
@@ -1221,7 +1221,7 @@
         const gasUrl = getGasUrl();
         const expectedPw = getAdminPassword();
 
-        if (enteredPw === expectedPw || enteredPw === ADMIN_PASSWORD_DEFAULT) {
+        if (enteredPw === expectedPw) {
           verified = true;
         } else if (gasUrl && gasUrl !== "여기에_배포된_GAS_URL_입력") {
           try {
