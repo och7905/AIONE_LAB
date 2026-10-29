@@ -679,10 +679,115 @@ function appendApplicantToSheet(item) {
   }
 }
 
+/**
+ * 구글 스프레드시트 열림 이벤트 핸들러 (커스텀 메뉴 추가)
+ */
+function onOpen() {
+  try {
+    const ui = SpreadsheetApp.getUi();
+    ui.createMenu('📁 AIONE 연구실')
+      .addItem('🔄 드라이브 PDF와 시트 실시간 동기화 (삭제된 지원자 자동 정리)', 'syncDriveAndSheetWithToast')
+      .addToUi();
+  } catch (_) {}
+}
+
+function syncDriveAndSheetWithToast() {
+  syncDriveAndSheet();
+  try {
+    SpreadsheetApp.getActiveSpreadsheet().toast('구글 드라이브의 실제 PDF 파일 상태와 동기화가 완료되었습니다.', '동기화 완료', 3);
+  } catch (_) {}
+}
+
+/**
+ * 구글 드라이브 폴더의 실제 PDF 파일 상태와 스프레드시트를 실시간 동기화
+ * (사용자가 드라이브에서 직접 PDF를 삭제/휴지통 이동한 경우, 시트에서도 해당 행을 자동 정리)
+ */
+function syncDriveAndSheet() {
+  try {
+    const sheet = getTargetSheet();
+    if (!sheet) return;
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return;
+
+    // 1. 구글 드라이브 폴더 내 활성(휴지통 제외) 파일 목록 수집
+    var activeFileIds = {};
+    var activeFileNames = {};
+    try {
+      var folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+      var files = folder.getFiles();
+      while (files.hasNext()) {
+        var file = files.next();
+        if (!file.isTrashed()) {
+          activeFileIds[file.getId()] = true;
+          activeFileNames[file.getName()] = true;
+        }
+      }
+    } catch (driveErr) {
+      Logger.log('Drive folder access warning: ' + driveErr);
+      return; // 드라이브 접근 오류 시 안전을 위해 행을 삭제하지 않음
+    }
+
+    // 2. 시트의 각 행을 역순으로 검사 (행 삭제 시 인덱스 밀림 방지)
+    var data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
+
+    for (var i = data.length - 1; i >= 0; i--) {
+      var row = data[i];
+      var name = String(row[1] || '').trim();
+      var studentId = String(row[2] || '').trim();
+      var pdfUrl = String(row[17] || row[16] || '').trim();
+
+      if (!name && !studentId) continue;
+
+      // 구글 드라이브에 PDF가 연동되었던 행인 경우
+      if (pdfUrl && pdfUrl.indexOf('drive.google.com') !== -1) {
+        var fileExists = false;
+
+        // A. URL 내 파일 ID로 활성 여부 확인
+        var match = pdfUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          var fId = match[1];
+          if (activeFileIds[fId]) {
+            fileExists = true;
+          } else {
+            try {
+              var f = DriveApp.getFileById(fId);
+              if (f && !f.isTrashed()) {
+                fileExists = true;
+              }
+            } catch (_) {
+              fileExists = false;
+            }
+          }
+        }
+
+        // B. 파일명 패턴으로 확인 (AIONE_지원서_{학번}_{성명}.pdf)
+        if (!fileExists) {
+          var expectedFileName = 'AIONE_지원서_' + studentId + '_' + name + '.pdf';
+          if (activeFileNames[expectedFileName]) {
+            fileExists = true;
+          }
+        }
+
+        // 만약 드라이브에서 PDF가 삭제(또는 휴지통 이동)되었다면 시트에서도 해당 행 자동 삭제
+        if (!fileExists) {
+          Logger.log('Drive PDF missing, deleting row: ' + name + ' (' + studentId + ')');
+          sheet.deleteRow(i + 2);
+        }
+      }
+    }
+  } catch (err) {
+    Logger.log('syncDriveAndSheet error: ' + err);
+  }
+}
+
 function fetchApplicantsFromSheet() {
   try {
     const sheet = getTargetSheet();
     if (!sheet) return [];
+
+    // 드라이브의 실제 PDF 상태와 시트 행을 먼저 자동 동기화
+    syncDriveAndSheet();
 
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return [];
@@ -730,14 +835,19 @@ function deleteApplicantFromSheet(studentId, name) {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return false;
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+    const data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
 
     for (let i = 0; i < data.length; i++) {
       const rowName = String(data[i][1] || '').trim();
       const rowId = String(data[i][2] || '').trim();
+      const pdfUrl = String(data[i][17] || data[i][16] || '').trim();
 
       if (rowId === studentId || (name && rowName === name)) {
+        // 1. 스프레드시트에서 행 삭제
         sheet.deleteRow(i + 2);
+
+        // 2. 구글 드라이브에서도 해당 PDF 파일 삭제(휴지통 이동)
+        deletePdfFromDrive(rowId, rowName, pdfUrl);
         return true;
       }
     }
@@ -745,6 +855,36 @@ function deleteApplicantFromSheet(studentId, name) {
   } catch (err) {
     Logger.log('deleteApplicantFromSheet error: ' + err);
     return false;
+  }
+}
+
+function deletePdfFromDrive(studentId, name, pdfUrl) {
+  try {
+    // 1. pdfUrl에서 파일 ID 추출하여 휴지통 이동
+    if (pdfUrl) {
+      const match = pdfUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        try {
+          const file = DriveApp.getFileById(match[1]);
+          if (file) file.setTrashed(true);
+        } catch (_) {}
+      }
+    }
+
+    // 2. 구글 드라이브 폴더에서 학번/이름 매칭 파일 검색하여 휴지통 이동
+    try {
+      const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+      const files = folder.getFiles();
+      while (files.hasNext()) {
+        const file = files.next();
+        const fname = file.getName();
+        if ((studentId && fname.indexOf(studentId) !== -1) || (name && fname.indexOf(name) !== -1)) {
+          file.setTrashed(true);
+        }
+      }
+    } catch (_) {}
+  } catch (err) {
+    Logger.log('deletePdfFromDrive warning: ' + err);
   }
 }
 

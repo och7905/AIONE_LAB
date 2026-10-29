@@ -1480,21 +1480,17 @@
       }
     }
 
-    // Merge strategy: GAS first, then union with local submissions not in GAS
+    // Merge strategy: When Google Sheet is connected, it is the authoritative database.
     if (gasSuccess) {
-      const merged = [...gasList];
-      localList.forEach(localItem => {
-        const exists = merged.some(m => String(m.student_id) === String(localItem.student_id));
-        if (!exists) {
-          merged.push(localItem);
-        }
-      });
-      adminApplicantsData = merged;
+      adminApplicantsData = gasList;
+      try {
+        localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(gasList));
+      } catch (_) {}
       if (badge) {
         badge.innerHTML = '<i class="fa-brands fa-google text-[10px] text-emerald-400 mr-1"></i>구글 시트 연동됨';
         badge.className = 'px-2.5 py-1 rounded text-[11px] font-mono bg-emerald-500/10 border border-emerald-500/30 text-emerald-300';
       }
-      if (isManualRefresh) window.showToast?.(`🔄 구글 시트에서 ${adminApplicantsData.length}건을 성공적으로 불러왔습니다.`);
+      if (isManualRefresh) window.showToast?.(`🔄 구글 드라이브 및 시트와 동기화되었습니다 (${adminApplicantsData.length}건).`);
     } else {
       adminApplicantsData = localList;
       if (badge) {
