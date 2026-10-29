@@ -415,10 +415,12 @@
   // PDF Generation System (Official Form Template via html2pdf)
   // --------------------------------------------------------------------------
   async function generateApplicationPDF(data) {
+    const wrapper = document.getElementById('pdf-render-wrapper');
     const template = document.getElementById('pdf-application-template');
-    if (!template) return null;
+    if (!template || !wrapper) return null;
 
     try {
+      // 1. Populate text fields
       const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = val || '-';
@@ -449,49 +451,52 @@
 
       const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
 
+      // 2. Make template active at (0, 0) behind the webpage content
+      wrapper.style.display = 'block';
+      wrapper.style.position = 'fixed';
+      wrapper.style.top = '0px';
+      wrapper.style.left = '0px';
+      wrapper.style.zIndex = '-99999';
+      wrapper.style.opacity = '1';
+
+      // Allow 200ms for browser to paint fonts and DOM layout
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      let pdfBlob = null;
       if (typeof html2pdf !== 'undefined') {
         const opt = {
           margin: [8, 8, 8, 8],
           filename: filename,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: 794
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
-        // 1. Download PDF to applicant's computer
+        // Render PDF directly to user's computer
         await html2pdf().set(opt).from(template).save();
 
-        // 2. Obtain Blob for email link or direct upload
-        const pdfBlob = await html2pdf().set(opt).from(template).output('blob');
-        return { pdfBlob, filename };
-      }
-    } catch (err) {
-      console.warn('PDF generation error:', err);
-    }
-    return null;
-  }
-
-  // Upload PDF to get direct download URL (for Formspree email viewer)
-  async function uploadPDFForLink(pdfBlob, filename) {
-    if (!pdfBlob) return '';
-    try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', pdfBlob, filename);
-      uploadFormData.append('expire', '172800'); // 48 hours
-      const res = await fetch('https://tmpfiles.org/api/v1/upload', {
-        method: 'POST',
-        body: uploadFormData
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.status === 'success' && json.data?.url) {
-          return json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+        // Obtain Blob for optional Google Apps Script attachment
+        if (GOOGLE_APPS_SCRIPT_URL) {
+          pdfBlob = await html2pdf().set(opt).from(template).output('blob');
         }
       }
-    } catch (e) {
-      console.warn('PDF Link upload warning (non-fatal):', e);
+
+      // Hide wrapper again
+      wrapper.style.display = 'none';
+      return { filename, pdfBlob };
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      if (wrapper) wrapper.style.display = 'none';
     }
-    return '';
+    return null;
   }
 
   function blobToBase64(blob) {
@@ -523,20 +528,14 @@
     setLoadingState(true, '지원서 PDF 공식 양식 생성 중...');
 
     let pdfResult = null;
-    let pdfDownloadLink = '';
 
     try {
       // Step A. Generate and auto-download official application PDF
       pdfResult = await generateApplicationPDF(data);
 
-      setLoadingState(true, '지원서 및 PDF 링크 메일 전송 중...');
+      setLoadingState(true, '지원서 내역 이메일 전송 중...');
 
-      // Step B. Upload PDF to get direct link for Formspree email
-      if (pdfResult?.pdfBlob) {
-        pdfDownloadLink = await uploadPDFForLink(pdfResult.pdfBlob, pdfResult.filename);
-      }
-
-      // Step C. If Google Apps Script WebApp is configured, send actual PDF attachment
+      // Step B. If Google Apps Script WebApp is configured, send actual PDF attachment
       if (GOOGLE_APPS_SCRIPT_URL && pdfResult?.pdfBlob) {
         try {
           const pdfBase64 = await blobToBase64(pdfResult.pdfBlob);
@@ -555,7 +554,7 @@
         }
       }
 
-      // Step D. Send email notification via Formspree
+      // Step C. Send clean email notification via Formspree (without any third-party upload links)
       const emailSubject = `[AIONE LAB 신규 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
       const payload = {
         _subject: emailSubject,
@@ -574,7 +573,7 @@
         "연구실희망활동": data.desired_activities || "없음",
         "면접가능시간": data.interview_available_times,
         "포트폴리오링크": data.portfolio_links || "없음",
-        "생성된_지원서_공식_PDF_열람링크": pdfDownloadLink || "지원자 컴퓨터에 PDF 자동 저장 완료 (메일 수동 첨부 가능)",
+        "공식_지원서_PDF_생성": `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf (지원자 PC 다운로드 완료)`,
         "제출일시": new Date().toLocaleString('ko-KR')
       };
 
@@ -591,7 +590,7 @@
         // Success
         localStorage.removeItem(STORAGE_KEY);
         downloadBackupJSON(data);
-        showSuccessModal(data, pdfDownloadLink);
+        showSuccessModal(data);
         form.reset();
         charLimitFields.forEach(({ limit, counterId }) => {
           const counter = document.getElementById(counterId);
@@ -625,7 +624,7 @@
   // --------------------------------------------------------------------------
   // Modals & Fallback Logic
   // --------------------------------------------------------------------------
-  function showSuccessModal(data, pdfDownloadLink) {
+  function showSuccessModal(data) {
     const modal = document.getElementById('success-modal');
     const modalApplicantName = document.getElementById('modal-applicant-name');
     const mailtoPdfBtn = document.getElementById('modal-mailto-pdf-btn');
@@ -635,12 +634,15 @@
     }
 
     if (mailtoPdfBtn) {
+      const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
       const subject = encodeURIComponent(`[AIONE LAB 신규 지원서 PDF 전달] ${data.name} (${data.student_id} / ${data.grade})`);
       const body = encodeURIComponent(
-        `안녕하세요, AIONE LAB 랩장님 및 교수님.\n\n` +
+        `안녕하세요, AIONE LAB 지도교수님 및 랩장님.\n\n` +
         `2026학년도 연구원 지원자 ${data.name} (${data.student_id} / ${data.grade})입니다.\n\n` +
-        `공식 생성된 지원서 양식 PDF 파일을 첨부하여 발송해 드립니다.\n\n` +
-        (pdfDownloadLink ? `[공식 지원서 PDF 바로보기/다운로드]\n${pdfDownloadLink}\n\n` : '') +
+        `웹사이트 지원서 접수 완료 후 공식 생성된 지원서 양식 PDF 파일(${filename})을 첨부하여 발송해 드립니다.\n\n` +
+        `[지원자 연락처]\n` +
+        `- 전화번호: ${data.phone}\n` +
+        `- 포트폴리오 링크: ${data.portfolio_links || '없음'}\n\n` +
         `감사합니다.\n` +
         `${data.name} 드림`
       );
