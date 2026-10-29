@@ -1,5 +1,5 @@
 /**
- * AIONE LAB - Application Form Management & Formspree Integration
+ * AIONE LAB - Application Form Management & PDF Generation & Delivery System
  * 대전대학교 컴퓨터공학 인공지능 연구실 (AIONE LAB)
  */
 
@@ -9,6 +9,9 @@
   const STORAGE_KEY = 'aione_application_draft';
   const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mzeevple';
   const CONTACT_EMAIL = 'och7905@naver.com';
+
+  // 구글 앱스 스크립트 웹앱 URL (배포 후 아래에 기입하면 PDF 파일이 och7905@naver.com 메일로 직접 첨부되어 100% 자동 발송됩니다)
+  const GOOGLE_APPS_SCRIPT_URL = '';
 
   const form = document.getElementById('recruitment-form');
   if (!form) return;
@@ -59,7 +62,6 @@
         saveDraft();
       });
 
-      // Initial count check
       updateCount();
     }
   });
@@ -80,7 +82,6 @@
     };
 
     studentIdInput.addEventListener('keydown', (e) => {
-      // Allow control and navigation keys
       if (
         e.key === 'Backspace' ||
         e.key === 'Delete' ||
@@ -96,7 +97,6 @@
       ) {
         return;
       }
-      // Block all non-digit keys (including English and Korean IME keys)
       if (e.key < '0' || e.key > '9') {
         e.preventDefault();
       }
@@ -134,7 +134,6 @@
     };
 
     phoneInput.addEventListener('keydown', (e) => {
-      // Allow control and navigation keys
       if (
         e.key === 'Backspace' ||
         e.key === 'Delete' ||
@@ -150,7 +149,6 @@
       ) {
         return;
       }
-      // Block all non-digit keys
       if (e.key < '0' || e.key > '9') {
         e.preventDefault();
       }
@@ -260,174 +258,6 @@
   }
 
   // --------------------------------------------------------------------------
-  // Multi-File Upload Dropzone Handler
-  // --------------------------------------------------------------------------
-  const fileInput = document.getElementById('file_attachment');
-  const fileDropZone = document.getElementById('file-drop-zone');
-  const selectedFilesContainer = document.getElementById('selected-files-container');
-  const selectedFilesList = document.getElementById('selected-files-list');
-  const filesSummaryCount = document.getElementById('files-summary-count');
-  const filesTotalStats = document.getElementById('files-total-stats');
-  const clearAllFilesBtn = document.getElementById('clear-all-files-btn');
-  
-  let attachedFiles = []; // Array of { file, name, size, formattedSize, id }
-
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  }
-
-  function getFileIcon(fileName) {
-    const ext = fileName.split('.').pop().toLowerCase();
-    switch (ext) {
-      case 'pdf': return '<i class="fa-solid fa-file-pdf text-rose-400"></i>';
-      case 'zip':
-      case '7z':
-      case 'tar':
-      case 'gz': return '<i class="fa-solid fa-file-zipper text-amber-400"></i>';
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-      case 'gif': return '<i class="fa-solid fa-file-image text-emerald-400"></i>';
-      case 'doc':
-      case 'docx':
-      case 'hwp': return '<i class="fa-solid fa-file-word text-blue-400"></i>';
-      default: return '<i class="fa-solid fa-file-lines text-sky-400"></i>';
-    }
-  }
-
-  function addFiles(newFiles) {
-    if (!newFiles || newFiles.length === 0) return;
-    let addedCount = 0;
-    Array.from(newFiles).forEach(file => {
-      const exists = attachedFiles.some(f => f.name === file.name && f.size === file.size);
-      if (!exists) {
-        attachedFiles.push({
-          file: file,
-          name: file.name,
-          size: file.size,
-          formattedSize: formatFileSize(file.size),
-          id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-        });
-        addedCount++;
-      }
-    });
-
-    if (addedCount > 0) {
-      window.showToast?.(`📎 ${addedCount}개의 파일이 추가되었습니다. (총 ${attachedFiles.length}개)`);
-    } else {
-      window.showToast?.('⚠️ 이미 목록에 추가된 파일입니다.');
-    }
-    renderFileList();
-    if (fileInput) fileInput.value = '';
-  }
-
-  function removeFile(fileId) {
-    attachedFiles = attachedFiles.filter(f => f.id !== fileId);
-    renderFileList();
-    window.showToast?.('🗑️ 파일이 삭제되었습니다.');
-  }
-
-  function renderFileList() {
-    if (!selectedFilesContainer || !selectedFilesList) return;
-
-    if (attachedFiles.length === 0) {
-      selectedFilesContainer.classList.add('hidden');
-      if (filesSummaryCount) filesSummaryCount.classList.add('hidden');
-      if (fileDropZone) fileDropZone.classList.remove('border-sky-400');
-      return;
-    }
-
-    selectedFilesContainer.classList.remove('hidden');
-    if (fileDropZone) fileDropZone.classList.add('border-sky-400');
-
-    // Total size calculation
-    const totalBytes = attachedFiles.reduce((acc, f) => acc + f.size, 0);
-    const totalFormatted = formatFileSize(totalBytes);
-
-    if (filesSummaryCount) {
-      filesSummaryCount.textContent = `${attachedFiles.length}개 첨부됨 (${totalFormatted})`;
-      filesSummaryCount.classList.remove('hidden');
-    }
-
-    if (filesTotalStats) {
-      filesTotalStats.textContent = `첨부 파일 목록 (${attachedFiles.length}개 · 총 ${totalFormatted})`;
-    }
-
-    selectedFilesList.innerHTML = '';
-    attachedFiles.forEach(f => {
-      const item = document.createElement('div');
-      item.className = 'p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-between text-xs text-slate-200 transition-colors hover:bg-sky-500/15';
-      item.innerHTML = `
-        <div class="flex items-center gap-2.5 truncate mr-2">
-          ${getFileIcon(f.name)}
-          <span class="truncate font-mono text-white text-xs font-semibold">${f.name}</span>
-          <span class="text-[11px] text-slate-400 font-mono whitespace-nowrap">(${f.formattedSize})</span>
-        </div>
-        <button type="button" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded hover:bg-rose-500/15 transition-colors cursor-pointer text-xs flex items-center gap-1" data-remove-id="${f.id}" title="파일 삭제">
-          <i class="fa-solid fa-xmark"></i>
-          <span>삭제</span>
-        </button>
-      `;
-
-      item.querySelector('button').addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        removeFile(f.id);
-      });
-
-      selectedFilesList.appendChild(item);
-    });
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files && fileInput.files.length > 0) {
-        addFiles(fileInput.files);
-      }
-    });
-  }
-
-  if (clearAllFilesBtn) {
-    clearAllFilesBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      attachedFiles = [];
-      renderFileList();
-      window.showToast?.('🗑️ 모든 첨부 파일이 삭제되었습니다.');
-    });
-  }
-
-  // Drag-and-drop feedback on dropzone
-  if (fileDropZone) {
-    ['dragenter', 'dragover'].forEach(eventName => {
-      fileDropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        fileDropZone.classList.add('border-sky-400', 'bg-sky-500/10');
-      });
-    });
-
-    ['dragleave', 'dragend'].forEach(eventName => {
-      fileDropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        fileDropZone.classList.remove('border-sky-400', 'bg-sky-500/10');
-      });
-    });
-
-    fileDropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      fileDropZone.classList.remove('border-sky-400', 'bg-sky-500/10');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        addFiles(e.dataTransfer.files);
-      }
-    });
-  }
-
-  // --------------------------------------------------------------------------
   // LocalStorage Auto-Draft Autosave & Restore
   // --------------------------------------------------------------------------
   let saveTimeout = null;
@@ -480,7 +310,6 @@
       });
 
       if (restoredAny) {
-        // Trigger character counters update
         charLimitFields.forEach(({ id, limit, counterId }) => {
           const textarea = document.getElementById(id);
           const counter = document.getElementById(counterId);
@@ -489,19 +318,11 @@
           }
         });
 
-        // Ensure formatting for student ID and phone
         if (studentIdInput && studentIdInput.value) {
           studentIdInput.value = studentIdInput.value.replace(/[^0-9]/g, '').slice(0, 10);
         }
         if (phoneInput && phoneInput.value) {
-          const raw = phoneInput.value.replace(/[^0-9]/g, '').slice(0, 11);
-          if (raw.length > 7) {
-            phoneInput.value = `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7, 11)}`;
-          } else if (raw.length > 3) {
-            phoneInput.value = `${raw.slice(0, 3)}-${raw.slice(3)}`;
-          } else {
-            phoneInput.value = raw;
-          }
+          phoneInput.value = formatKoreanPhone(phoneInput.value);
         }
 
         syncAllPills();
@@ -519,8 +340,6 @@
       if (confirm('작성 중인 모든 임시 저장 내용을 초기화하시겠습니까?')) {
         localStorage.removeItem(STORAGE_KEY);
         form.reset();
-        attachedFiles = [];
-        renderFileList();
         charLimitFields.forEach(({ limit, counterId }) => {
           const counter = document.getElementById(counterId);
           if (counter) counter.textContent = `0 / ${limit}자`;
@@ -546,13 +365,7 @@
     const rawData = new FormData(form);
     const data = {};
     for (const [key, value] of rawData.entries()) {
-      if (key !== 'file_attachment') {
-        data[key] = value.trim();
-      }
-    }
-    if (attachedFiles.length > 0) {
-      data.attached_files = attachedFiles.map(f => `${f.name} (${f.formattedSize})`);
-      data.attached_files_count = attachedFiles.length;
+      data[key] = value.trim();
     }
     return data;
   }
@@ -583,8 +396,7 @@
         tech_stack: data.tech_stack,
         desired_activities: data.desired_activities,
         interview_available_times: data.interview_available_times,
-        portfolio_links: data.portfolio_links,
-        attached_files: attachedFiles.length > 0 ? attachedFiles.map(f => ({ name: f.name, size: f.formattedSize })) : []
+        portfolio_links: data.portfolio_links
       }
     };
 
@@ -600,12 +412,106 @@
   }
 
   // --------------------------------------------------------------------------
-  // Form Submission & Formspree AJAX
+  // PDF Generation System (Official Form Template via html2pdf)
+  // --------------------------------------------------------------------------
+  async function generateApplicationPDF(data) {
+    const template = document.getElementById('pdf-application-template');
+    if (!template) return null;
+
+    try {
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val || '-';
+      };
+
+      setVal('pdf-val-date', new Date().toLocaleString('ko-KR'));
+      setVal('pdf-val-name', data.name);
+      setVal('pdf-val-student-id', data.student_id);
+      setVal('pdf-val-grade', data.grade);
+      setVal('pdf-val-phone', data.phone);
+      setVal('pdf-val-military', data.military);
+
+      setVal('pdf-val-tech', data.tech_stack || '없음');
+      setVal('pdf-val-activity', data.desired_activities || '없음');
+      setVal('pdf-val-interview', data.interview_available_times);
+      setVal('pdf-val-portfolio', data.portfolio_links || '없음');
+
+      setVal('pdf-val-keyword', data.keyword_intro);
+      setVal('pdf-val-motivation', data.motivation);
+      setVal('pdf-val-problem', data.problem_solving);
+      setVal('pdf-val-study', data.study_plan);
+      setVal('pdf-val-expectation', data.expectation);
+      setVal('pdf-val-career', data.career_plan);
+
+      const now = new Date();
+      setVal('pdf-val-sign-date', `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`);
+      setVal('pdf-val-sign-name', data.name);
+
+      const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
+
+      if (typeof html2pdf !== 'undefined') {
+        const opt = {
+          margin: [8, 8, 8, 8],
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // 1. Download PDF to applicant's computer
+        await html2pdf().set(opt).from(template).save();
+
+        // 2. Obtain Blob for email link or direct upload
+        const pdfBlob = await html2pdf().set(opt).from(template).output('blob');
+        return { pdfBlob, filename };
+      }
+    } catch (err) {
+      console.warn('PDF generation error:', err);
+    }
+    return null;
+  }
+
+  // Upload PDF to get direct download URL (for Formspree email viewer)
+  async function uploadPDFForLink(pdfBlob, filename) {
+    if (!pdfBlob) return '';
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', pdfBlob, filename);
+      uploadFormData.append('expire', '172800'); // 48 hours
+      const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+        method: 'POST',
+        body: uploadFormData
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === 'success' && json.data?.url) {
+          return json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+        }
+      }
+    } catch (e) {
+      console.warn('PDF Link upload warning (non-fatal):', e);
+    }
+    return '';
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Form Submission & Multi-Channel Delivery (Formspree + PDF Generation)
   // --------------------------------------------------------------------------
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Basic Validation
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
@@ -613,36 +519,65 @@
 
     const data = collectFormData();
 
-    // Format subject as required: [AIONE LAB 신규 지원서] {이름} ({학번} / {학년})
-    const emailSubject = `[AIONE LAB 신규 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
+    // 1. Loading state: Generating PDF
+    setLoadingState(true, '지원서 PDF 공식 양식 생성 중...');
 
-    // Prepare payload for Formspree
-    const payload = {
-      _subject: emailSubject,
-      "성명": data.name,
-      "학번": data.student_id,
-      "지원구분_학년": data.grade,
-      "연락처": data.phone,
-      "병역구분": data.military,
-      "나를표현하는단어_이유": data.keyword_intro,
-      "지원동기(500자)": data.motivation,
-      "문제해결경험(500자)": data.problem_solving,
-      "학업계획(200자)": data.study_plan,
-      "얻고자하는것(200자)": data.expectation,
-      "졸업후진로계획(200자)": data.career_plan,
-      "기술스택_경험": data.tech_stack || "없음",
-      "연구실희망활동": data.desired_activities || "없음",
-      "면접가능시간": data.interview_available_times,
-      "포트폴리오링크": data.portfolio_links || "없음",
-      "첨부파일_목록": attachedFiles.length > 0 ? attachedFiles.map((f, i) => `${i + 1}. ${f.name} (${f.formattedSize})`).join('\n') : "첨부파일 없음",
-      "첨부파일_총개수": `${attachedFiles.length}개`,
-      "제출일시": new Date().toLocaleString('ko-KR')
-    };
-
-    // UI Loading state
-    setLoadingState(true);
+    let pdfResult = null;
+    let pdfDownloadLink = '';
 
     try {
+      // Step A. Generate and auto-download official application PDF
+      pdfResult = await generateApplicationPDF(data);
+
+      setLoadingState(true, '지원서 및 PDF 링크 메일 전송 중...');
+
+      // Step B. Upload PDF to get direct link for Formspree email
+      if (pdfResult?.pdfBlob) {
+        pdfDownloadLink = await uploadPDFForLink(pdfResult.pdfBlob, pdfResult.filename);
+      }
+
+      // Step C. If Google Apps Script WebApp is configured, send actual PDF attachment
+      if (GOOGLE_APPS_SCRIPT_URL && pdfResult?.pdfBlob) {
+        try {
+          const pdfBase64 = await blobToBase64(pdfResult.pdfBlob);
+          await fetch(GOOGLE_APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...data,
+              pdfBase64: pdfBase64,
+              filename: pdfResult.filename
+            })
+          });
+        } catch (gasErr) {
+          console.warn('Google Apps Script submission warning:', gasErr);
+        }
+      }
+
+      // Step D. Send email notification via Formspree
+      const emailSubject = `[AIONE LAB 신규 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
+      const payload = {
+        _subject: emailSubject,
+        "성명": data.name,
+        "학번": data.student_id,
+        "지원구분_학년": data.grade,
+        "연락처": data.phone,
+        "병역구분": data.military,
+        "나를표현하는단어_이유": data.keyword_intro,
+        "지원동기(500자)": data.motivation,
+        "문제해결경험(500자)": data.problem_solving,
+        "학업계획(200자)": data.study_plan,
+        "얻고자하는것(200자)": data.expectation,
+        "졸업후진로계획(200자)": data.career_plan,
+        "기술스택_경험": data.tech_stack || "없음",
+        "연구실희망활동": data.desired_activities || "없음",
+        "면접가능시간": data.interview_available_times,
+        "포트폴리오링크": data.portfolio_links || "없음",
+        "생성된_지원서_공식_PDF_열람링크": pdfDownloadLink || "지원자 컴퓨터에 PDF 자동 저장 완료 (메일 수동 첨부 가능)",
+        "제출일시": new Date().toLocaleString('ko-KR')
+      };
+
       const response = await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -656,10 +591,8 @@
         // Success
         localStorage.removeItem(STORAGE_KEY);
         downloadBackupJSON(data);
-        showSuccessModal(data);
+        showSuccessModal(data, pdfDownloadLink);
         form.reset();
-        attachedFiles = [];
-        renderFileList();
         charLimitFields.forEach(({ limit, counterId }) => {
           const counter = document.getElementById(counterId);
           if (counter) counter.textContent = `0 / ${limit}자`;
@@ -677,10 +610,10 @@
     }
   });
 
-  function setLoadingState(isLoading) {
+  function setLoadingState(isLoading, customText) {
     if (isLoading) {
       submitBtn.disabled = true;
-      submitBtnText.textContent = '지원서 전송 중...';
+      submitBtnText.textContent = customText || '지원서 전송 중...';
       submitBtnSpinner.classList.remove('hidden');
     } else {
       submitBtn.disabled = false;
@@ -692,12 +625,28 @@
   // --------------------------------------------------------------------------
   // Modals & Fallback Logic
   // --------------------------------------------------------------------------
-  function showSuccessModal(data) {
+  function showSuccessModal(data, pdfDownloadLink) {
     const modal = document.getElementById('success-modal');
     const modalApplicantName = document.getElementById('modal-applicant-name');
+    const mailtoPdfBtn = document.getElementById('modal-mailto-pdf-btn');
+
     if (modalApplicantName) {
-      modalApplicantName.textContent = `${data.name} (${data.student_id})`;
+      modalApplicantName.textContent = `${data.name} (${data.student_id}) 님`;
     }
+
+    if (mailtoPdfBtn) {
+      const subject = encodeURIComponent(`[AIONE LAB 신규 지원서 PDF 전달] ${data.name} (${data.student_id} / ${data.grade})`);
+      const body = encodeURIComponent(
+        `안녕하세요, AIONE LAB 랩장님 및 교수님.\n\n` +
+        `2026학년도 연구원 지원자 ${data.name} (${data.student_id} / ${data.grade})입니다.\n\n` +
+        `공식 생성된 지원서 양식 PDF 파일을 첨부하여 발송해 드립니다.\n\n` +
+        (pdfDownloadLink ? `[공식 지원서 PDF 바로보기/다운로드]\n${pdfDownloadLink}\n\n` : '') +
+        `감사합니다.\n` +
+        `${data.name} 드림`
+      );
+      mailtoPdfBtn.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+    }
+
     if (modal) {
       modal.classList.add('active');
     }
@@ -711,7 +660,6 @@
 
     if (mailtoBtn) {
       const subject = encodeURIComponent(`[AIONE LAB 지원서 수동 제출] ${data.name} (${data.student_id})`);
-      const filesSummary = attachedFiles.length > 0 ? attachedFiles.map((f, i) => `${i + 1}. ${f.name} (${f.formattedSize})`).join(', ') : "첨부파일 없음";
       const body = encodeURIComponent(
         `안녕하세요, AIONE LAB 2026 연구원 지원자 ${data.name}입니다.\n\n` +
         `웹 전송 네트워크 오류로 인해 직접 이메일로 지원서를 전송합니다.\n\n` +
@@ -731,7 +679,7 @@
         `[연구실 희망 활동]:\n${data.desired_activities}\n\n` +
         `[면접 가능 시간대]:\n${data.interview_available_times}\n\n` +
         `[포트폴리오 링크]:\n${data.portfolio_links}\n\n` +
-        `[첨부 파일]:\n${filesSummary}\n(파일은 본 메일에 수동 첨부 부탁드립니다)`
+        `(다운로드된 지원서 PDF 파일을 본 메일에 첨부 부탁드립니다)`
       );
 
       mailtoBtn.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
