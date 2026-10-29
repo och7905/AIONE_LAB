@@ -625,7 +625,7 @@
   // --------------------------------------------------------------------------
   // Applicant Data Encoding & Online Viewing Link Generation (URL-Safe)
   // --------------------------------------------------------------------------
-  function createApplicantViewerLink(data) {
+  async function createApplicantViewerLink(data) {
     try {
       const compact = {
         n: data.name || '',
@@ -647,13 +647,29 @@
       };
 
       const jsonStr = JSON.stringify(compact);
-      const utf8Bytes = new TextEncoder().encode(jsonStr);
-      let binary = '';
-      for (let idx = 0; idx < utf8Bytes.length; idx++) {
-        binary += String.fromCharCode(utf8Bytes[idx]);
+      let encodedPayload = '';
+
+      // Try modern CompressionStream (deflate) to compress down to ~400-600 bytes
+      if (typeof CompressionStream !== 'undefined') {
+        try {
+          const stream = new Blob([jsonStr]).stream().pipeThrough(new CompressionStream('deflate'));
+          const buffer = await new Response(stream).arrayBuffer();
+          const bytes = new Uint8Array(buffer);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          encodedPayload = 'z_' + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        } catch (_) {}
       }
-      // URL-safe Base64: replace '+' with '-', '/' with '_', remove '='
-      const urlSafeB64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      // Fallback to standard Base64 if CompressionStream is not available
+      if (!encodedPayload) {
+        const utf8Bytes = new TextEncoder().encode(jsonStr);
+        let binary = '';
+        for (let idx = 0; idx < utf8Bytes.length; idx++) {
+          binary += String.fromCharCode(utf8Bytes[idx]);
+        }
+        encodedPayload = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
 
       // Determine robust base URL (fallback to official GitHub Pages URL if testing on local file)
       let baseUrl = 'https://och7905.github.io/AIONE_LAB/';
@@ -665,27 +681,45 @@
         }
       }
 
-      return `${baseUrl}?view_app=${urlSafeB64}`;
+      return `${baseUrl}?view_app=${encodedPayload}`;
     } catch (err) {
       console.error('Failed to create viewer link:', err);
       return `https://och7905.github.io/AIONE_LAB/?applicant=${encodeURIComponent(data.name)}`;
     }
   }
 
-  function decodeApplicantData(raw) {
+  async function decodeApplicantData(raw) {
     try {
       if (!raw) return null;
-      // Restore URL-safe Base64: '-' -> '+', '_' -> '/', ' ' -> '+', pad with '='
-      let base64 = raw.replace(/-/g, '+').replace(/_/g, '/').replace(/ /g, '+');
-      while (base64.length % 4 !== 0) {
-        base64 += '=';
+      let jsonStr = '';
+
+      if (raw.startsWith('z_')) {
+        // Decompress deflate
+        try {
+          const cleanB64 = raw.slice(2).replace(/-/g, '+').replace(/_/g, '/');
+          let padded = cleanB64;
+          while (padded.length % 4 !== 0) padded += '=';
+          const binary = atob(padded);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          if (typeof DecompressionStream !== 'undefined') {
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+            jsonStr = await new Response(stream).text();
+          }
+        } catch (_) {}
       }
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let idx = 0; idx < binary.length; idx++) {
-        bytes[idx] = binary.charCodeAt(idx);
+
+      if (!jsonStr) {
+        // Standard Base64 decode
+        const clean = raw.startsWith('z_') ? raw.slice(2) : raw;
+        let base64 = clean.replace(/-/g, '+').replace(/_/g, '/').replace(/ /g, '+');
+        while (base64.length % 4 !== 0) base64 += '=';
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let idx = 0; idx < binary.length; idx++) bytes[idx] = binary.charCodeAt(idx);
+        jsonStr = new TextDecoder().decode(bytes);
       }
-      const jsonStr = new TextDecoder().decode(bytes);
+
       const compact = JSON.parse(jsonStr);
 
       return {
@@ -821,7 +855,7 @@
     modal.classList.add('active');
   }
 
-  function checkAndOpenViewer() {
+  async function checkAndOpenViewer() {
     try {
       let raw = '';
       const searchParams = new URLSearchParams(window.location.search);
@@ -836,7 +870,7 @@
       }
 
       if (raw) {
-        const data = decodeApplicantData(raw);
+        const data = await decodeApplicantData(raw);
         if (data && (data.name || data.student_id)) {
           openApplicantViewerModal(data);
 
@@ -894,7 +928,7 @@
       const filename = pdfResult?.filename || `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
 
       // Step B: Create Permanent Online PDF Viewing Link (never expires, 100% CORS-safe)
-      const viewerUrl = createApplicantViewerLink(data);
+      const viewerUrl = await createApplicantViewerLink(data);
 
       setLoadingState(true, '지원서 내역 이메일 발송 중...');
 
@@ -902,10 +936,7 @@
       const emailSubject = `[AIONE LAB 2026 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
       const formspreePayload = {
         _subject: emailSubject,
-        email: CONTACT_EMAIL,
-        _replyto: CONTACT_EMAIL,
-        "0_공식_지원서_PDF_온라인_열람_링크": viewerUrl,
-        "0_공식_지원서_PDF_즉시_다운로드_링크": `${viewerUrl}&download_pdf=1`,
+        "0_공식_지원서_온라인_열람_및_다운로드": `${viewerUrl}&download_pdf=1`,
         "1_성명": data.name,
         "2_학번": data.student_id,
         "3_지원구분_학년": data.grade,
@@ -921,8 +952,7 @@
         "13_연구실_희망활동": data.desired_activities || "없음",
         "14_면접가능시간": data.interview_available_times,
         "15_포트폴리오링크": data.portfolio_links || "없음",
-        "16_공식_지원서_PDF_열람_및_다운로드_링크": `${viewerUrl}&download_pdf=1`,
-        "16_1_지원서_PDF_파일명": filename,
+        "16_공식_지원서_파일명": filename,
         "17_접수일시": new Date().toLocaleString('ko-KR')
       };
 
@@ -936,6 +966,17 @@
       });
 
       console.log('Formspree response status:', response.status);
+
+      if (!response.ok) {
+        let errDetail = `HTTP ${response.status}`;
+        try {
+          const errJson = await response.json();
+          if (errJson && (errJson.error || errJson.errors)) {
+            errDetail = errJson.error || JSON.stringify(errJson.errors);
+          }
+        } catch (_) {}
+        throw new Error(`Formspree 전송 오류 (${errDetail})`);
+      }
 
       // Step D. If Google Apps Script WebApp is configured, send actual PDF attachment
       if (GOOGLE_APPS_SCRIPT_URL && pdfResult?.pdfBlob) {
