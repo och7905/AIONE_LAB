@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIONE LAB | 대전대학교 컴퓨터공학 인공지능 연구실 - 2026 연구원 모집</title>
+  <meta name="description" content="대전대학교 컴퓨터공학 인공지능 연구실 AIONE LAB 공식 브랜딩 및 2026학년도 학부연구생 6기(예비 2학년) & 석사 신입생 모집">
+  <meta name="keywords" content="대전대학교, 컴퓨터공학, 인공지능, AIONE LAB, AI 연구실, 딥러닝, 머신러닝, 컴퓨터비전, NLP, 학부연구생 모집, GPU 서버">
+  <meta property="og:title" content="AIONE LAB | 대전대학교 컴퓨터공학 인공지능 연구실">
+  <meta property="og:description" content="2026학년도 AIONE LAB 학부연구생 6기 및 석사 신입생 모집. 독립 GPU 클러스터 및 1:1 멘토링 지원.">
+  <meta property="og:type" content="website">
+
+  <!-- Favicon (Official AIONE LAB Emblem) -->
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+  <meta property="og:image" content="assets/logo.png">
+
+  <!-- Google Fonts & Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#38bdf8',
+              blue: '#3b82f6',
+              purple: '#818cf8',
+              dark: '#070b14',
+              surface: '#0d1527',
+            }
+          },
+          fontFamily: {
+            sans: ['Pretendard', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css?v=20261029_03">
+</head>
+<body class="selection:bg-sky-500/30 selection:text-white">
+
+  <!-- Background Interactive Neural Network Canvas -->
+  <canvas id="neural-canvas"></canvas>
+
+  <div class="content-wrapper flex flex-col min-h-screen">
+
+    <!-- ======================================================================
+         1. GLOBAL HEADER (Glassmorphic & Fixed)
+         ====================================================================== -->
+    <header class="glass-header fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        
+        <!-- Brand Logo -->
+        <a href="#" class="flex items-center gap-3.5 group focus:outline-none">
+          <div class="relative w-11 h-11 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-sky-400 to-indigo-500 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
+            <img src="assets/logo.png" alt="AIONE LAB 공식 로고" class="w-full h-full object-contain rounded-full bg-slate-900/40">
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold tracking-tight text-white group-hover:text-amber-400 transition-colors">AIONE LAB</span>
+              <span class="text-[10px] px-2 py-0.5 rounded font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">SINCE 2023</span>
+            </div>
+            <p class="text-[11px] text-slate-400 hidden sm:block">Artificial Intelligence Operation for Network &amp; Energy</p>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Anchor Links -->
+        <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
+          <a href="#about" class="hover:text-sky-400 transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-compass text-xs text-sky-400"></i>
+            <span>연구실 소개</span>
+          </a>
+          <a href="#servers" class="hover:text-sky-400 transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-server text-xs text-indigo-400"></i>
+            <span>서버 인프라</span>
+          </a>
+          <a href="#members" class="hover:text-sky-400 transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-xs text-emerald-400"></i>
+            <span>연구진</span>
+          </a>
+          <a href="#benefits" class="hover:text-sky-400 transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-gift text-xs text-amber-400"></i>
+            <span>혜택 &amp; 위치</span>
+          </a>
+
+          <!-- External Google Site Link in Nav -->
+          <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-sky-400 transition-colors flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:border-sky-500/40">
+            <span>공식 Google Site</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+          </a>
+        </nav>
+
+        <!-- Right Action Controls -->
+        <div class="flex items-center gap-3">
+          <!-- Dark/Light Theme Toggle -->
+          <button id="theme-toggle" type="button" aria-label="테마 전환" class="w-10 h-10 rounded-lg flex items-center justify-center bg-white/5 border border-white/10 text-slate-300 hover:text-sky-400 hover:border-sky-500/40 transition-all focus:outline-none">
+            <i id="theme-icon-dark" class="fa-solid fa-moon text-sm hidden"></i>
+            <i id="theme-icon-light" class="fa-solid fa-sun text-sm"></i>
+          </button>
+
+          <!-- Apply CTA Button -->
+          <a href="#apply" class="btn-glow-primary text-sm hidden sm:inline-flex">
+            <span>지원하기</span>
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </a>
+
+          <!-- Mobile Hamburger Menu Button -->
+          <button id="mobile-menu-btn" type="button" aria-label="메뉴 열기" class="md:hidden w-10 h-10 rounded-lg flex items-center justify-center bg-white/5 border border-white/10 text-slate-300 hover:text-sky-400 transition-colors">
+            <i class="fa-solid fa-bars text-base"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Mobile Dropdown Navigation -->
+      <div id="mobile-nav" class="hidden md:hidden glass-header border-t border-white/5 px-4 pt-3 pb-6 space-y-3">
+        <a href="#about" class="block py-2 text-slate-200 hover:text-sky-400 font-medium">
+          <i class="fa-solid fa-compass mr-2 text-sky-400"></i> 연구실 소개
+        </a>
+        <a href="#servers" class="block py-2 text-slate-200 hover:text-sky-400 font-medium">
+          <i class="fa-solid fa-server mr-2 text-indigo-400"></i> 서버 인프라
+        </a>
+        <a href="#members" class="block py-2 text-slate-200 hover:text-sky-400 font-medium">
+          <i class="fa-solid fa-users mr-2 text-emerald-400"></i> 연구진 소개
+        </a>
+        <a href="#benefits" class="block py-2 text-slate-200 hover:text-sky-400 font-medium">
+          <i class="fa-solid fa-gift mr-2 text-amber-400"></i> 지원 혜택 &amp; 위치
+        </a>
+        <div class="pt-2 border-t border-white/10 flex flex-col gap-2">
+          <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="py-2 text-xs text-sky-300 hover:underline flex items-center gap-1.5">
+            <i class="fa-solid fa-globe"></i> 연구실 공식 Google Site 바로가기 ↗
+          </a>
+          <a href="https://och7905.github.io/Personal_Website_Deployment/" target="_blank" rel="noopener noreferrer" class="py-2 text-xs text-indigo-300 hover:underline flex items-center gap-1.5">
+            <i class="fa-solid fa-user-astronaut"></i> 랩장(오창현) 포트폴리오 바로가기 ↗
+          </a>
+          <a href="#apply" class="btn-glow-primary text-sm w-full justify-center mt-2">
+            <span>2026 연구원 지원서 작성</span>
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </a>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- ======================================================================
+         2. HERO SECTION (Interactive Particle Canvas, Recruitment Badge)
+         ====================================================================== -->
+    <section class="relative pt-36 pb-20 md:pt-44 md:pb-28 overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        
+        <!-- Official Emblem Showcase -->
+        <div class="flex justify-center mb-5">
+          <div class="relative group">
+            <div class="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-500/30 via-sky-500/30 to-indigo-500/30 blur-xl opacity-70 group-hover:opacity-100 transition duration-700 animate-pulse"></div>
+            <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full p-2 glass-panel border-2 border-amber-400/40 shadow-2xl flex items-center justify-center bg-slate-950/70 backdrop-blur-xl group-hover:scale-105 transition-transform duration-300">
+              <img src="assets/logo.png" alt="AIONE LAB 공식 로고 엠블럼" class="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(217,119,6,0.35)]">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2026 Recruitment Badge -->
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-sky-400/40 shadow-lg shadow-sky-500/10 mb-8 animate-pulse">
+          <span class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-sm shadow-sky-400"></span>
+          <span class="text-xs sm:text-sm font-semibold tracking-wide text-sky-300">
+            2026학년도 AIONE LAB 학부연구생 6기(예비 2학년) &amp; 석사 신입생 모집
+          </span>
+          <i class="fa-solid fa-sparkles text-amber-300 text-xs"></i>
+        </div>
+
+        <!-- Main Title -->
+        <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.15] mb-6">
+          Architecting Intelligence,<br />
+          <span class="text-gradient">Innovating the Horizon</span>
+        </h1>
+
+        <!-- Subtitle & Description -->
+        <p class="max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-slate-300 font-normal leading-relaxed mb-6">
+          대전대학교 컴퓨터공학 인공지능 연구실 <strong class="text-amber-300 font-semibold">AIONE LAB</strong>
+          <span class="text-xs sm:text-sm block text-slate-400 mt-1 mb-3 font-mono">Artificial Intelligence Operation for Network and Energy · SINCE 2023</span>
+          <strong class="text-sky-300 font-semibold">AI 예지 보전</strong>, <strong class="text-rose-300 font-semibold">의료 AI</strong>, <strong class="text-emerald-300 font-semibold">자율주행</strong> 등<br class="hidden sm:inline" />
+          산업 현장과 의료, 미래 모빌리티를 혁신하는 실전 딥러닝 연구를 선도하며 차세대 AI 연구자로 함께 도약할 동료를 맞이합니다.
+        </p>
+
+        <!-- Research Track Badges in Hero -->
+        <div class="flex flex-wrap items-center justify-center gap-2.5 mb-10">
+          <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-300 border border-sky-500/30 shadow-sm">
+            <i class="fa-solid fa-chart-line text-sky-400"></i> AI 예지 보전 (Predictive Maintenance)
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/30 shadow-sm">
+            <i class="fa-solid fa-heart-pulse text-rose-400"></i> 의료 AI (Medical AI)
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 shadow-sm">
+            <i class="fa-solid fa-car-side text-emerald-400"></i> 자율주행 (Autonomous Driving)
+          </span>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-4 mb-16">
+          <a href="#apply" class="btn-glow-primary text-base px-8 py-3.5">
+            <i class="fa-solid fa-bolt-lightning text-amber-300"></i>
+            <span>지원서 즉시 작성 (#apply)</span>
+          </a>
+          
+          <a href="https://och7905.github.io/Personal_Website_Deployment/" target="_blank" rel="noopener noreferrer" class="btn-glow-secondary text-base px-6 py-3.5 group">
+            <i class="fa-solid fa-user-tie text-indigo-400 group-hover:text-sky-400 transition-colors"></i>
+            <span>랩장 포트폴리오 확인</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
+          </a>
+
+          <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="btn-glow-secondary text-base px-6 py-3.5 group">
+            <i class="fa-brands fa-google text-sky-400"></i>
+            <span>연구실 공식 사이트</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
+          </a>
+        </div>
+
+        <!-- Hero Highlights Stat Strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+          
+          <div class="glass-panel p-5 text-left border border-white/5 hover:border-sky-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono text-slate-400">GPU VRAM</span>
+              <i class="fa-solid fa-microchip text-sky-400"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">96GB + 32GB</div>
+            <div class="text-xs text-slate-400 mt-1">Blackwell &amp; Ampere 서버</div>
+          </div>
+
+          <div class="glass-panel p-5 text-left border border-white/5 hover:border-indigo-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono text-slate-400">SCHOLARSHIP</span>
+              <i class="fa-solid fa-graduation-cap text-indigo-400"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">100% 전액 지원</div>
+            <div class="text-xs text-slate-400 mt-1">대학원 등록금 + 연구인건비</div>
+          </div>
+
+          <div class="glass-panel p-5 text-left border border-white/5 hover:border-emerald-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono text-slate-400">ENVIRONMENT</span>
+              <i class="fa-solid fa-network-wired text-emerald-400"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">1:1 계정 발급</div>
+            <div class="text-xs text-slate-400 mt-1">연구원 전원 독립 자원 할당</div>
+          </div>
+
+          <div class="glass-panel p-5 text-left border border-white/5 hover:border-amber-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono text-slate-400">MENTORING</span>
+              <i class="fa-solid fa-laptop-code text-amber-400"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">주간 세미나</div>
+            <div class="text-xs text-slate-400 mt-1">선배 1:1 멘토링 &amp; 연구 지도</div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================================
+         3. ABOUT & RESEARCH DOMAINS + PAPER/PATENT BANNER
+         ====================================================================== -->
+    <section id="about" class="py-20 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Section Header -->
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="cyber-badge mb-3">
+            <i class="fa-solid fa-atom"></i>
+            <span>RESEARCH DOMAINS</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
+            실전에 강한 인공지능 연구를 지향합니다
+          </h2>
+          <p class="text-slate-400 text-base leading-relaxed">
+            <strong class="text-white">AIONE LAB</strong>(<strong>A</strong>rtificial <strong>I</strong>ntelligence <strong>O</strong>peration for <strong>N</strong>etwork and <strong>E</strong>nergy)은
+            단순한 이론 습득을 넘어 최신 SOTA 모델을 분석하고, 독자적인 아키텍처 개선 및 지능형 네트워크·에너지·사물인터넷(IoT) 환경에 적용 가능한 융합 AI 솔루션을 연구합니다.
+          </p>
+        </div>
+
+        <!-- 4 Core Research Pillars -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          
+          <!-- Pillar 1: AI 예지 보전 (Predictive Maintenance) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-sky-400">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-5 group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-chart-line text-xl"></i>
+              </div>
+              <div class="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-sky-500/10 text-sky-300 border border-sky-500/20 mb-2">CORE TRACK 01</div>
+              <h3 class="text-lg font-bold text-white mb-2">AI 예지 보전<br><span class="text-xs font-mono font-normal text-slate-400">AI Predictive Maintenance</span></h3>
+              <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                산업 설비·에너지 시스템 고장 사전 예측, 시계열(Time-Series) 센서 데이터 분석, 음향/진동 이상 탐지(Anomaly Detection) 및 설비 잔여 수명(RUL) 예측 연구.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
+              <span class="spec-tag">Anomaly Detection</span>
+              <span class="spec-tag">Time-Series</span>
+              <span class="spec-tag">RUL Prediction</span>
+            </div>
+          </div>
+
+          <!-- Pillar 2: 의료 AI (Medical AI) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-rose-400">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-5 group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-heart-pulse text-xl"></i>
+              </div>
+              <div class="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-rose-500/10 text-rose-300 border border-rose-500/20 mb-2">CORE TRACK 02</div>
+              <h3 class="text-lg font-bold text-white mb-2">의료 AI<br><span class="text-xs font-mono font-normal text-slate-400">Medical AI</span></h3>
+              <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                의료 영상(X-ray, CT, MRI) 컴퓨터 비전 판독 및 병변 분할, 생체 신호(ECG/PPG) 딥러닝 분석, 임상 의사결정 보조 시스템(CDSS) 및 헬스케어 AI 연구.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
+              <span class="spec-tag">Medical Imaging</span>
+              <span class="spec-tag">Bio-Signals</span>
+              <span class="spec-tag">Segmentation</span>
+            </div>
+          </div>
+
+          <!-- Pillar 3: 자율주행 (Autonomous Driving) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-emerald-400">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-5 group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-car-side text-xl"></i>
+              </div>
+              <div class="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 mb-2">CORE TRACK 03</div>
+              <h3 class="text-lg font-bold text-white mb-2">자율주행<br><span class="text-xs font-mono font-normal text-slate-400">Autonomous Driving</span></h3>
+              <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                다중 센서 융합(LiDAR, Radar, Camera Sensor Fusion), 3D 객체 인식, 주행 경로 예측(Path Planning), 실시간 엣지 임베디드 주행 제어 최적화 연구.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
+              <span class="spec-tag">Sensor Fusion</span>
+              <span class="spec-tag">3D Vision</span>
+              <span class="spec-tag">Path Planning</span>
+            </div>
+          </div>
+
+          <!-- Pillar 4: AI 플랫폼 & 엣지 최적화 -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-amber-400">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-5 group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-microchip text-xl"></i>
+              </div>
+              <div class="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/20 mb-2">FOUNDATION</div>
+              <h3 class="text-lg font-bold text-white mb-2">AI 플랫폼 &amp; 엣지 인프라<br><span class="text-xs font-mono font-normal text-slate-400">Edge AI &amp; High-Performance MLOps</span></h3>
+              <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                독립 GPU 클러스터 기반 분산 학습, 엣지 경량화 모델 최적화(TensorRT, Pruning, Quantization) 및 실시간 IoT 디바이스 서빙 파이프라인.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
+              <span class="spec-tag">GPU Cluster</span>
+              <span class="spec-tag">TensorRT</span>
+              <span class="spec-tag">Model Pruning</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ==================================================================
+             PAPER & PATENT VERIFICATION BANNER (Google Site 연동)
+             ================================================================== -->
+        <div class="glass-panel p-8 sm:p-10 border-2 border-indigo-500/30 bg-gradient-to-r from-sky-950/40 via-indigo-950/40 to-purple-950/40 relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+            <div class="text-center lg:text-left">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-semibold mb-3">
+                <i class="fa-solid fa-award"></i>
+                <span>ACADEMIC EXCELLENCE &amp; PATENTS</span>
+              </div>
+              <h3 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+                AIONE LAB의 연구 성과와 논문 및 특허 실적을 확인하세요
+              </h3>
+              <p class="text-slate-300 text-sm sm:text-base max-w-2xl">
+                KCI 및 국제 학술지 논문 게재, 산업체 특허 출원 등 우리 연구실이 쌓아 올린 탄탄한 연구 실적은 공식 Google Site에서 투명하게 확인하실 수 있습니다.
+              </p>
+            </div>
+
+            <div class="flex-shrink-0">
+              <a href="https://sites.google.com/view/aionelab/publications?authuser=0" target="_blank" rel="noopener noreferrer" class="btn-glow-primary text-base px-7 py-3.5 whitespace-nowrap shadow-xl">
+                <span>논문 및 특허 실적 보러가기</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================================
+         4. RESEARCH & SERVER SPECS (서버 인프라)
+         ====================================================================== -->
+    <section id="servers" class="py-20 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="cyber-badge mb-3">
+            <i class="fa-solid fa-server"></i>
+            <span>EXCLUSIVE COMPUTING INFRASTRUCTURE</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
+            연구원 전원에게 독립 GPU 클러스터 계정을 발급합니다
+          </h2>
+          <p class="text-slate-400 text-base leading-relaxed">
+            자원 부족으로 인한 대기 시간 없이, 최신 딥러닝 모델 학습과 실험을 자유롭게 수행할 수 있도록 고성능 워크스테이션 및 클러스터 서버를 전폭적으로 지원합니다.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          
+          <!-- Server 1: Windows Workstation Server -->
+          <div class="glass-panel p-7 border-t-4 border-t-sky-400 relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+              <div class="flex items-center gap-3">
+                <span class="status-indicator"></span>
+                <div>
+                  <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    Windows 연구 워크스테이션 서버
+                  </h3>
+                  <span class="text-xs font-mono text-sky-400">NODE-01 // WORKSTATION ED.</span>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 text-xs font-mono rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">ONLINE</span>
+            </div>
+
+            <div class="space-y-4 mb-6">
+              <div class="flex items-center justify-between py-2 border-b border-white/5">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                  <i class="fa-solid fa-microchip w-4 text-sky-400"></i> CPU
+                </span>
+                <span class="text-sm font-mono font-semibold text-white">Intel Xeon w5-3433</span>
+              </div>
+
+              <div class="flex items-center justify-between py-2 border-b border-white/5">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                  <i class="fa-solid fa-memory w-4 text-sky-400"></i> RAM
+                </span>
+                <span class="text-sm font-mono font-semibold text-white">64GB ECC High-Speed</span>
+              </div>
+
+              <div class="flex flex-col py-2 border-b border-white/5 gap-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-vr-cardboard w-4 text-amber-400"></i> GPU
+                  </span>
+                  <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">VRAM 96GB</span>
+                </div>
+                <span class="text-sm font-mono font-semibold text-sky-300 break-words">
+                  NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between py-2 border-b border-white/5">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                  <i class="fa-solid fa-chess-board w-4 text-sky-400"></i> Mainboard
+                </span>
+                <span class="text-sm font-mono font-semibold text-white">Dell 006CX9</span>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-white/5 border border-white/5">
+              <p class="text-xs text-slate-300 flex items-start gap-2">
+                <i class="fa-solid fa-circle-check text-sky-400 mt-0.5"></i>
+                <span><strong>주요 용도:</strong> 초거대 LLM 파인튜닝, 대용량 파라미터 트랜스포머 모델 학습 및 멀티태스크 딥러닝 연구 전용</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Server 2: Linux High-Performance Cluster Server -->
+          <div class="glass-panel p-7 border-t-4 border-t-indigo-500 relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+              <div class="flex items-center gap-3">
+                <span class="status-indicator"></span>
+                <div>
+                  <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    Linux 고성능 클러스터 서버
+                  </h3>
+                  <span class="text-xs font-mono text-indigo-400">NODE-02 // LINUX CLUSTER</span>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 text-xs font-mono rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">ONLINE</span>
+            </div>
+
+            <div class="space-y-4 mb-6">
+              <div class="flex items-center justify-between py-2 border-b border-white/5">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                  <i class="fa-solid fa-microchip w-4 text-indigo-400"></i> CPU
+                </span>
+                <span class="text-sm font-mono font-semibold text-white">AMD EPYC 9124 16-Core</span>
+              </div>
+
+              <div class="flex items-center justify-between py-2 border-b border-white/5">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                  <i class="fa-solid fa-memory w-4 text-indigo-400"></i> RAM
+                </span>
+                <span class="text-sm font-mono font-semibold text-white">128GB ECC High-Density</span>
+              </div>
+
+              <div class="flex flex-col py-2 border-b border-white/5 gap-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-vr-cardboard w-4 text-amber-400"></i> GPU
+                  </span>
+                  <span class="text-xs font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">DUAL GPU</span>
+                </div>
+                <span class="text-sm font-mono font-semibold text-indigo-300 break-words">
+                  NVIDIA RTX A4000 × 2 (Multi-GPU CUDA)
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between py-2 border-b border-white/5">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                  <i class="fa-solid fa-chess-board w-4 text-indigo-400"></i> Mainboard
+                </span>
+                <span class="text-sm font-mono font-semibold text-white">ASUS K14PG-D24 Series</span>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-white/5 border border-white/5">
+              <p class="text-xs text-slate-300 flex items-start gap-2">
+                <i class="fa-solid fa-circle-check text-indigo-400 mt-0.5"></i>
+                <span><strong>주요 용도:</strong> 24시간 분산 학습, 다중 연구원 병렬 잡 스케줄링, 비전 모델 및 IoT 센서 데이터셋 트레이닝</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================================
+         5. MEMBERS (연구실 구성원)
+         ====================================================================== -->
+    <section id="members" class="py-20 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="cyber-badge mb-3">
+            <i class="fa-solid fa-user-astronaut"></i>
+            <span>LAB MEMBERS</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
+            AIONE LAB을 이끄는 연구진
+          </h2>
+          <p class="text-slate-400 text-base leading-relaxed">
+            지도교수님과 선배 연구원들이 따뜻하고 열정적인 분위기 속에서 여러분의 연구 여정을 체계적으로 함께합니다.
+          </p>
+        </div>
+
+        <!-- Professor Spotlight Card -->
+        <div class="max-w-4xl mx-auto mb-10">
+          <div class="glass-panel p-8 border-2 border-amber-500/30 bg-gradient-to-r from-amber-950/20 to-slate-900/60 relative overflow-hidden group">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              
+              <!-- Avatar -->
+              <div class="w-24 h-24 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-xl flex-shrink-0">
+                <i class="fa-solid fa-user-graduate text-4xl"></i>
+              </div>
+
+              <!-- Details -->
+              <div class="flex-1 text-center sm:text-left">
+                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">지도교수</span>
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30">컴퓨터공학 학회장</span>
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">사물인터넷(IoT)</span>
+                </div>
+
+                <h3 class="text-2xl font-bold text-white mb-2">전승현 지도교수</h3>
+                <p class="text-sm text-slate-300 leading-relaxed mb-4">
+                  대전대학교 컴퓨터공학 학회장이자 사물인터넷(IoT) 전공 주임교수로서, AIONE LAB의 3대 핵심 트랙인 <strong>AI 예지 보전, 의료 AI, 자율주행</strong> 연구를 총괄 지도하고 학생들의 논문 지도 및 진로 개척을 전폭적으로 지원합니다.
+                </p>
+
+                <!-- Professor Contact & Office Details -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4 p-3 rounded-xl bg-white/5 border border-white/10 text-xs">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-door-open text-amber-400"></i>
+                    <span><strong>교수 연구실:</strong> 융합과학관 330호</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-phone text-sky-400"></i>
+                    <span><strong>구내 전화:</strong> 2544 (042-280-2544)</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-envelope text-emerald-400"></i>
+                    <span><strong>이메일:</strong> <a href="mailto:creemur@dju.kr" class="text-emerald-300 hover:underline font-mono">creemur@dju.kr</a></span>
+                  </div>
+                </div>
+
+                <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200 transition-colors">
+                  <span>연구실 공식 사이트에서 교수님 소개 및 연구실적 확인하기</span>
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Students Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          
+          <!-- Member 1: 오창현 (랩장 3기) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-sky-400">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-lg">
+                  <i class="fa-solid fa-crown text-amber-300"></i>
+                </div>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">랩장 (학부연구생 3기)</span>
+              </div>
+
+              <h4 class="text-xl font-bold text-white mb-1">오창현</h4>
+              <p class="text-xs text-sky-400 font-mono mb-3">22학번 · 3학년</p>
+              
+              <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                <strong>주요 분야:</strong> AI &amp; 백엔드 개발<br>
+                딥러닝 모델 서빙, API 아키텍처 및 연구실 시스템 총괄 운영
+              </p>
+            </div>
+
+            <div class="pt-4 border-t border-white/10">
+              <a href="https://och7905.github.io/Personal_Website_Deployment/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full gap-2 text-xs font-medium py-2 px-3 rounded-lg bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 border border-sky-500/30 transition-colors">
+                <i class="fa-solid fa-globe"></i>
+                <span>개인 포트폴리오 ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Member 2: 권관우 (학부연구생 3기) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-indigo-400">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg">
+                  <i class="fa-solid fa-code text-white"></i>
+                </div>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">학부연구생 3기</span>
+              </div>
+
+              <h4 class="text-xl font-bold text-white mb-1">권관우</h4>
+              <p class="text-xs text-indigo-400 font-mono mb-3">22학번 · 3학년</p>
+              
+              <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                <strong>주요 분야:</strong> AI &amp; 자연어처리(NLP) / 딥러닝<br>
+                언어 모델 및 텍스트 마이닝, 지능형 딥러닝 연구
+              </p>
+            </div>
+
+            <div class="pt-4 border-t border-white/10">
+              <a href="https://kwonkkanu.github.io/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full gap-2 text-xs font-medium py-2 px-3 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/30 transition-colors">
+                <i class="fa-solid fa-globe"></i>
+                <span>개인 포트폴리오 ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Member 3: 김지은 (학부연구생 4기) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-pink-400">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center text-white text-xl shadow-lg">
+                  <i class="fa-solid fa-chalkboard-user text-white"></i>
+                </div>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded bg-pink-500/20 text-pink-300 border border-pink-500/40">학부연구생 4기</span>
+              </div>
+
+              <h4 class="text-xl font-bold text-white mb-1">김지은</h4>
+              <p class="text-xs text-pink-400 font-mono mb-3">25학번 · 2학년</p>
+              
+              <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                <strong>주요 분야:</strong> 교직이수 &amp; AI<br>
+                컴퓨터공학 교직 및 인공지능 교육 융합 기술 연구
+              </p>
+            </div>
+
+            <div class="pt-4 border-t border-white/10">
+              <a href="https://je-able.github.io/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full gap-2 text-xs font-medium py-2 px-3 rounded-lg bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 border border-pink-500/30 transition-colors">
+                <i class="fa-solid fa-globe"></i>
+                <span>개인 포트폴리오 ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Member 4: 장윤민 (학부연구생 5기) -->
+          <div class="glass-panel p-6 flex flex-col justify-between group hover:border-emerald-400">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl shadow-lg">
+                  <i class="fa-solid fa-seedling text-white"></i>
+                </div>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">학부연구생 5기</span>
+              </div>
+
+              <h4 class="text-xl font-bold text-white mb-1">장윤민</h4>
+              <p class="text-xs text-emerald-400 font-mono mb-3">26학번 · 1학년</p>
+              
+              <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                <strong>주요 분야:</strong> 컴퓨터공학 학사과정 / AI 기초<br>
+                핵심 CS 전공 기초 및 인공지능 기초 연구 트랙
+              </p>
+            </div>
+
+            <div class="pt-4 border-t border-white/10">
+              <span class="inline-flex items-center justify-center w-full gap-2 text-xs font-medium py-2 px-3 rounded-lg bg-white/5 text-slate-400 border border-white/10">
+                <i class="fa-solid fa-check"></i>
+                <span>학부연구생 트랙 진행 중</span>
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================================
+         6. BENEFITS & CONTACT (지원 혜택 및 위치)
+         ====================================================================== -->
+    <section id="benefits" class="py-20 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="cyber-badge mb-3">
+            <i class="fa-solid fa-gift"></i>
+            <span>LAB BENEFITS &amp; CONTACT</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
+            연구에만 온전히 몰입할 수 있는 최상의 지원
+          </h2>
+          <p class="text-slate-400 text-base leading-relaxed">
+            대학원생과 학부연구생 각각의 목표와 성장에 최적화된 체계적인 혜택과 쾌적한 연구실 인프라를 제공합니다.
+          </p>
+        </div>
+
+        <!-- Benefits Comparison Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
+          
+          <!-- Graduate Benefits -->
+          <div class="glass-panel p-8 border-2 border-indigo-500/40 relative">
+            <div class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 mb-4">
+              GRADUATE PROGRAM
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">대학원생 (석사 / 석박통합)</h3>
+            <p class="text-sm text-slate-300 mb-6">등록금 및 생활비 걱정 없이 최고 수준의 AI 연구에 집중할 수 있는 환경</p>
+            
+            <ul class="space-y-3.5 text-sm text-slate-300">
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-indigo-400 mt-1"></i>
+                <span><strong class="text-white">등록금 전액 100% 지원:</strong> 입학금 및 정규 학기 등록금 전액 장학 보장</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-indigo-400 mt-1"></i>
+                <span><strong class="text-white">연구장려금(인건비) 및 조교비 전액 지원:</strong> 매월 안정적인 연구 수당 지급</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-indigo-400 mt-1"></i>
+                <span><strong class="text-white">국내외 학술대회 경비 전액 지원:</strong> KCI/SCIE 학회 논문 발표 및 참가 지원</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-indigo-400 mt-1"></i>
+                <span><strong class="text-white">산학협력 R&amp;D 프로젝트 주도:</strong> 실제 산업 현장 인공지능 프로젝트 수행</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Undergraduate Benefits -->
+          <div class="glass-panel p-8 border-2 border-sky-400/40 relative">
+            <div class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4">
+              UNDERGRADUATE 6TH BATCH
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">AIONE LAB 학부연구생 6기 (예비 2학년)</h3>
+            <p class="text-sm text-slate-300 mb-6">선배들의 밀착 멘토링과 첨단 GPU로 학부 과정부터 남다른 경쟁력 확보</p>
+
+            <ul class="space-y-3.5 text-sm text-slate-300">
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-sky-400 mt-1"></i>
+                <span><strong class="text-white">독립 GPU 클러스터 개인 계정 발급:</strong> 나만의 딥러닝 개발 서버 환경</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-sky-400 mt-1"></i>
+                <span><strong class="text-white">1:1 선배 멘토링 &amp; 주간 AI 세미나:</strong> 기초 논문 리뷰부터 코드 리뷰까지</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-sky-400 mt-1"></i>
+                <span><strong class="text-white">개인 전용 연구석 및 편의시설:</strong> 듀얼 모니터 데스크, 24시간 연구실 출입</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-check text-sky-400 mt-1"></i>
+                <span><strong class="text-white">학부생 논문 투고 및 경진대회 참가:</strong> 전공 경쟁력과 독보적 포트폴리오</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Location & Contact Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          
+          <!-- Location Info -->
+          <div class="glass-panel p-7">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
+                <i class="fa-solid fa-location-dot text-lg"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">연구실 위치 (Location)</h3>
+                <p class="text-xs text-slate-400">대전대학교 융합과학관</p>
+              </div>
+            </div>
+
+            <div class="space-y-3 mb-4 text-xs sm:text-sm text-slate-300">
+              <div class="p-3 rounded-lg bg-white/5 border border-white/5">
+                <span class="text-sky-300 font-semibold block mb-0.5"><i class="fa-solid fa-microchip mr-1.5"></i> AIONE LAB 학생 연구실:</span>
+                <span>융합과학관 <strong>217호</strong> (개인 연구석 및 워크스테이션 인프라)</span>
+              </div>
+              <div class="p-3 rounded-lg bg-white/5 border border-white/5">
+                <span class="text-amber-300 font-semibold block mb-0.5"><i class="fa-solid fa-user-tie mr-1.5"></i> 전승현 지도교수 연구실:</span>
+                <span>융합과학관 <strong>330호</strong> (교내 구내전화: 2544)</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+              <strong>주소:</strong> 대전광역시 동구 대학로 62 (대전대학교 융합과학관 217호 / 330호)
+            </p>
+
+            <div class="space-y-2.5 text-xs text-slate-400 mb-6">
+              <p><i class="fa-solid fa-building mr-1.5 text-indigo-400"></i> <strong>건물 안내:</strong> <strong class="text-amber-300">대전대학교 서문(西門) 방면</strong> 융합과학관 2층 217호(학생실) &amp; 3층 330호(교수실)</p>
+              <p><i class="fa-solid fa-route mr-1.5 text-sky-400"></i> <strong>방문 팁:</strong> 동문이 아닌 <strong>서문 쪽</strong>으로 진입하시면 융합과학관으로 가장 빠르고 편리하게 오실 수 있습니다.</p>
+              <p><i class="fa-solid fa-bus mr-1.5 text-emerald-400"></i> <strong>대중교통:</strong> 대전역 및 대전복합터미널에서 시내버스(605, 608번 등) 이용 후 '대전대학교' 하차</p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <button type="button" data-copy="대전광역시 동구 대학로 62 대전대학교 융합과학관" data-copy-label="연구실 주소" class="text-xs px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-copy"></i>
+                <span>주소 복사</span>
+              </button>
+              <a href="https://map.kakao.com/?q=대전대학교 융합과학관" target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>카카오맵으로 서문 위치 보기 ↗</span>
+              </a>
+              <a href="https://map.naver.com/p/search/대전대학교%20융합과학관" target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-map-pin"></i>
+                <span>네이버 지도로 서문 위치 보기 ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Contact Inquiries -->
+          <div class="glass-panel p-7">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <i class="fa-solid fa-headset text-lg"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">모집 및 연구 문의처 (Contact)</h3>
+                <p class="text-xs text-slate-400">궁금한 점은 언제든 편하게 연락주세요</p>
+              </div>
+            </div>
+
+            <div class="space-y-3.5 mb-6">
+              <!-- Professor Contact -->
+              <div class="p-3.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap"></i> 전승현 지도교수 (융합과학관 330호)
+                  </span>
+                  <span class="text-[11px] font-mono text-slate-400">구내전화: 2544</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-300 font-mono flex items-center gap-2">
+                    <i class="fa-solid fa-envelope text-amber-400"></i> creemur@dju.kr
+                  </span>
+                  <button type="button" data-copy="creemur@dju.kr" data-copy-label="교수님 이메일" class="p-1.5 rounded hover:bg-white/10 text-slate-300 hover:text-white transition-colors" title="이메일 복사">
+                    <i class="fa-regular fa-copy"></i>
+                  </button>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">
+                  직통 번호: <a href="tel:042-280-2544" class="text-slate-300 hover:underline font-mono">042-280-2544</a>
+                </div>
+              </div>
+
+              <!-- Lab Leader Email -->
+              <div class="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                <div class="flex items-center gap-3">
+                  <i class="fa-solid fa-envelope text-sky-400 text-lg"></i>
+                  <div>
+                    <div class="text-xs text-slate-400">오창현 랩장 이메일 (융합과학관 217호)</div>
+                    <a href="mailto:och7905@naver.com" class="text-sm font-mono font-semibold text-white hover:text-sky-400 transition-colors">
+                      och7905@naver.com
+                    </a>
+                  </div>
+                </div>
+                <button type="button" data-copy="och7905@naver.com" data-copy-label="랩장 이메일" class="p-2 rounded hover:bg-white/10 text-slate-300 hover:text-white transition-colors" title="이메일 복사">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </div>
+
+              <!-- Lab Leader Phone -->
+              <div class="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                <div class="flex items-center gap-3">
+                  <i class="fa-solid fa-phone text-emerald-400 text-lg"></i>
+                  <div>
+                    <div class="text-xs text-slate-400">오창현 랩장 연락처</div>
+                    <a href="tel:010-9347-7906" class="text-sm font-mono font-semibold text-white hover:text-emerald-400 transition-colors">
+                      010-9347-7906
+                    </a>
+                  </div>
+                </div>
+                <button type="button" data-copy="010-9347-7906" data-copy-label="랩장 연락처" class="p-2 rounded hover:bg-white/10 text-slate-300 hover:text-white transition-colors" title="연락처 복사">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed">
+              * 지원서 작성 전 연구실 사전 견학이나 지도교수님(330호) 면담 희망 시 이메일 또는 문자로 언제든 연락주시면 친절히 안내해 드립니다.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================================
+         7. RECRUITMENT APPLICATION FORM (#apply)
+         ====================================================================== -->
+    <section id="apply" class="py-24 relative bg-slate-950/40">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Section Header -->
+        <div class="text-center mb-12">
+          <div class="cyber-badge mb-3">
+            <i class="fa-solid fa-file-signature"></i>
+            <span>2026 RECRUITMENT APPLICATION</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+            AIONE LAB 신규 연구원 지원서 작성
+          </h2>
+          <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+            아래 지원서를 성실히 작성해 주시면 <strong class="text-sky-400">och7905@naver.com</strong>으로 즉시 전송되며,<br class="hidden sm:inline">
+            입력하신 내용은 브라우저에 실시간 자동 임시 저장되고, 제출 시 백업용 JSON 파일이 즉시 다운로드됩니다.
+          </p>
+
+          <!-- Draft Auto-save Banner -->
+          <div class="mt-4 inline-flex items-center gap-3 text-xs text-slate-400 bg-white/5 px-4 py-2 rounded-full border border-white/10">
+            <span class="flex items-center gap-1.5">
+              <i class="fa-solid fa-floppy-disk text-sky-400"></i>
+              <span>작성 중 자동 임시 저장 활성화됨</span>
+            </span>
+            <span id="draft-saved-indicator" class="text-emerald-400 font-mono opacity-0 transition-opacity duration-300">
+              ✓ 저장됨
+            </span>
+            <button type="button" id="clear-draft-btn" class="text-rose-400 hover:underline hover:text-rose-300 ml-2">
+              임시 저장 비우기
+            </button>
+          </div>
+        </div>
+
+        <!-- Application Form Card -->
+        <div class="glass-panel p-6 sm:p-10 border-2 border-sky-500/30 shadow-2xl">
+          <form id="recruitment-form" novalidate class="space-y-8">
+
+            <!-- --------------------------------------------------------------
+                 PART 1. 기본 정보 (Basic Info)
+                 -------------------------------------------------------------- -->
+            <div>
+              <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
+                <i class="fa-solid fa-id-card text-sky-400"></i>
+                <h3 class="text-lg font-bold text-white">1. 기본 인적사항</h3>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <!-- 성명 -->
+                <div>
+                  <label for="name" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                    성명 <span class="text-rose-400">*</span>
+                  </label>
+                  <input type="text" id="name" name="name" required placeholder="예: 홍길동" class="form-input">
+                </div>
+
+                <!-- 학번 -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="student_id" class="text-xs font-semibold text-slate-300">
+                      학번 <span class="text-rose-400">*</span>
+                    </label>
+                    <span class="text-[11px] text-sky-400 font-mono">숫자만 입력</span>
+                  </div>
+                  <input 
+                    type="text" 
+                    id="student_id" 
+                    name="student_id" 
+                    required 
+                    inputmode="numeric" 
+                    pattern="[0-9]{6,10}" 
+                    maxlength="10" 
+                    placeholder="예: 20261234 (숫자만 입력)" 
+                    class="form-input font-mono"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                    onkeyup="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                    onblur="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                  >
+                </div>
+
+                <!-- 지원 구분 / 학년 -->
+                <div>
+                  <label for="grade" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                    지원 구분 및 학년 <span class="text-rose-400">*</span>
+                  </label>
+                  <select id="grade" name="grade" required class="form-select">
+                    <option value="" disabled selected>학년을 선택해주세요</option>
+                    <option value="1학년 (예비 2학년 6기)">1학년 (예비 2학년 - 학부연구생 6기)</option>
+                    <option value="2학년">2학년</option>
+                    <option value="3학년">3학년</option>
+                    <option value="4학년">4학년</option>
+                    <option value="석사 진학 희망자">석사/석박통합과정 진학 희망자</option>
+                  </select>
+                </div>
+
+                <!-- 전화번호 -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="phone" class="text-xs font-semibold text-slate-300">
+                      전화번호 <span class="text-rose-400">*</span>
+                    </label>
+                    <span class="text-[11px] text-sky-400 font-mono">'-' 자동 기입</span>
+                  </div>
+                  <input 
+                    type="tel" 
+                    id="phone" 
+                    name="phone" 
+                    required 
+                    inputmode="numeric" 
+                    pattern="^01[0-9]-[0-9]{3,4}-[0-9]{4}$" 
+                    maxlength="13" 
+                    placeholder="010-1234-5678 (숫자만 입력)" 
+                    class="form-input font-mono"
+                    oninput="(function(el){ var d = el.value.replace(/[^0-9]/g, '').slice(0, 11); if (d.length > 7) { el.value = d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7); } else if (d.length > 3) { el.value = d.slice(0, 3) + '-' + d.slice(3); } else { el.value = d; } })(this);"
+                    onkeyup="(function(el){ var d = el.value.replace(/[^0-9]/g, '').slice(0, 11); if (d.length > 7) { el.value = d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7); } else if (d.length > 3) { el.value = d.slice(0, 3) + '-' + d.slice(3); } else { el.value = d; } })(this);"
+                    onblur="(function(el){ var d = el.value.replace(/[^0-9]/g, '').slice(0, 11); if (d.length > 7) { el.value = d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7); } else if (d.length > 3) { el.value = d.slice(0, 3) + '-' + d.slice(3); } else { el.value = d; } })(this);"
+                  >
+                </div>
+
+                <!-- 군필 여부 -->
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-semibold text-slate-300 mb-2">
+                    병역 구분 <span class="text-rose-400">*</span>
+                  </label>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <label class="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-sky-400 transition-colors">
+                      <input type="radio" name="military" value="군필" required class="accent-sky-400">
+                      <span class="text-xs text-slate-200">군필</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-sky-400 transition-colors">
+                      <input type="radio" name="military" value="미필" class="accent-sky-400">
+                      <span class="text-xs text-slate-200">미필</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-sky-400 transition-colors">
+                      <input type="radio" name="military" value="면제" class="accent-sky-400">
+                      <span class="text-xs text-slate-200">면제</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:border-sky-400 transition-colors">
+                      <input type="radio" name="military" value="해당없음" class="accent-sky-400">
+                      <span class="text-xs text-slate-200">해당없음</span>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- --------------------------------------------------------------
+                 PART 2. 자기소개 및 동기 (Text Essays with Limits)
+                 -------------------------------------------------------------- -->
+            <div>
+              <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
+                <i class="fa-solid fa-comment-dots text-sky-400"></i>
+                <h3 class="text-lg font-bold text-white">2. 자기소개 및 학업 의지</h3>
+              </div>
+
+              <div class="space-y-5">
+                
+                <!-- 단어 소개 -->
+                <div>
+                  <label for="keyword_intro" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                    본인을 가장 잘 나타낼 수 있는 '단어'와 그 이유 (자기소개) <span class="text-rose-400">*</span>
+                  </label>
+                  <textarea id="keyword_intro" name="keyword_intro" rows="3" required placeholder="예: '스펀지' - 새로운 CS 이론과 딥러닝 기술을 스펀지처럼 빠르게 흡수하고 발전시키는 열정을 가지고 있기 때문입니다..." class="form-textarea"></textarea>
+                </div>
+
+                <!-- 지원 동기 (최대 500자) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="motivation" class="text-xs font-semibold text-slate-300">
+                      AIONE LAB 지원동기 <span class="text-rose-400">*</span>
+                    </label>
+                    <span id="counter-motivation" class="char-counter">0 / 500자</span>
+                  </div>
+                  <textarea id="motivation" name="motivation" rows="4" maxlength="500" required placeholder="AIONE LAB을 알게 된 계기 및 지원하게 된 구체적인 동기를 서술해주세요. (최대 500자)" class="form-textarea"></textarea>
+                </div>
+
+                <!-- 문제해결 경험 (최대 500자) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="problem_solving" class="text-xs font-semibold text-slate-300">
+                      인생에서 힘든 문제를 주도적으로 해결한 경험 및 배운 점 <span class="text-rose-400">*</span>
+                    </label>
+                    <span id="counter-problem_solving" class="char-counter">0 / 500자</span>
+                  </div>
+                  <textarea id="problem_solving" name="problem_solving" rows="4" maxlength="500" required placeholder="코딩 프로젝트, 학업, 또는 일상에서 직면했던 어려운 문제를 주도적으로 해결한 과정과 이를 통해 느낀 점을 적어주세요. (최대 500자)" class="form-textarea"></textarea>
+                </div>
+
+                <!-- 학업 계획 (최대 200자) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="study_plan" class="text-xs font-semibold text-slate-300">
+                      AIONE LAB 연구원으로서의 학업 계획 <span class="text-rose-400">*</span>
+                    </label>
+                    <span id="counter-study_plan" class="char-counter">0 / 200자</span>
+                  </div>
+                  <textarea id="study_plan" name="study_plan" rows="3" maxlength="200" required placeholder="연구실 활동과 전공 학업을 병행하며 어떤 목표로 공부할 것인지 간략히 서술해주세요. (최대 200자)" class="form-textarea"></textarea>
+                </div>
+
+                <!-- 얻고자 하는 것 (최대 200자) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="expectation" class="text-xs font-semibold text-slate-300">
+                      연구실에서 얻고자 하는 것 <span class="text-rose-400">*</span>
+                    </label>
+                    <span id="counter-expectation" class="char-counter">0 / 200자</span>
+                  </div>
+                  <textarea id="expectation" name="expectation" rows="3" maxlength="200" required placeholder="AIONE LAB 활동을 통해 어떤 역량이나 경험을 얻고 싶은지 작성해주세요. (최대 200자)" class="form-textarea"></textarea>
+                </div>
+
+                <!-- 졸업 후 진로 계획 (최대 200자) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="career_plan" class="text-xs font-semibold text-slate-300">
+                      졸업 후 진로 계획 <span class="text-rose-400">*</span>
+                    </label>
+                    <span id="counter-career_plan" class="char-counter">0 / 200자</span>
+                  </div>
+                  <textarea id="career_plan" name="career_plan" rows="3" maxlength="200" required placeholder="대학원 진학, AI 연구원, 백엔드/AI 엔지니어, 빅테크 취업 등 희망하는 진로 방향을 적어주세요. (최대 200자)" class="form-textarea"></textarea>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- --------------------------------------------------------------
+                 PART 3. 기술 스택 & 활동 계획 & 면접 희망 시간대
+                 -------------------------------------------------------------- -->
+            <div>
+              <div class="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
+                <i class="fa-solid fa-laptop-code text-sky-400"></i>
+                <h3 class="text-lg font-bold text-white">3. 기술 스택 및 면접 일정</h3>
+              </div>
+
+              <div class="space-y-5">
+                
+                <!-- 기술 스택 & 경험 -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="tech_stack" class="text-xs font-semibold text-slate-300">
+                      사용해본 프로그래밍 언어, 프레임워크, 배포/클라우드 등 프로그래밍 경험
+                    </label>
+                    <span class="text-[11px] text-sky-400 font-mono">블록 클릭 시 자동 선택 (복수 선택)</span>
+                  </div>
+                  
+                  <!-- Quick Interactive Pills -->
+                  <div class="flex flex-wrap gap-2 mb-2.5" id="tech-pills-container">
+                    <button type="button" data-tech="Python" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>Python</span></button>
+                    <button type="button" data-tech="PyTorch" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>PyTorch</span></button>
+                    <button type="button" data-tech="TensorFlow" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>TensorFlow</span></button>
+                    <button type="button" data-tech="C/C++" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>C/C++</span></button>
+                    <button type="button" data-tech="Java" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>Java</span></button>
+                    <button type="button" data-tech="JavaScript/TypeScript" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>JS / TS</span></button>
+                    <button type="button" data-tech="Linux/Bash" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>Linux</span></button>
+                    <button type="button" data-tech="Git/GitHub" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>Git</span></button>
+                    <button type="button" data-tech="FastAPI" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>FastAPI</span></button>
+                    <button type="button" data-tech="Docker" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>Docker</span></button>
+                    <button type="button" data-tech="OpenCV" class="select-pill tech-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>OpenCV</span></button>
+                  </div>
+
+                  <input type="text" id="tech_stack" name="tech_stack" placeholder="위 블록을 클릭하거나 직접 입력해주세요 (예: Python, PyTorch, C, Git 등 - 기초 수준이어도 환영)" class="form-input">
+                </div>
+
+                <!-- 희망 활동 -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="desired_activities" class="text-xs font-semibold text-slate-300">
+                      연구실에서 하고 싶은 연구 및 활동 (희망 트랙)
+                    </label>
+                    <span class="text-[11px] text-emerald-400 font-mono">블록 클릭 시 자동 선택 (복수 선택)</span>
+                  </div>
+                  <div class="flex flex-wrap gap-2 mb-2.5" id="activity-pills-container">
+                    <button type="button" class="select-pill activity-pill-btn" data-activity="AI 예지 보전 (AI Predictive Maintenance)"><i class="fa-solid fa-check pill-check"></i><span>AI 예지 보전</span></button>
+                    <button type="button" class="select-pill activity-pill-btn" data-activity="의료 AI (Medical AI)"><i class="fa-solid fa-check pill-check"></i><span>의료 AI</span></button>
+                    <button type="button" class="select-pill activity-pill-btn" data-activity="자율주행 (Autonomous Driving)"><i class="fa-solid fa-check pill-check"></i><span>자율주행</span></button>
+                    <button type="button" class="select-pill activity-pill-btn" data-activity="GPU 딥러닝 시스템 &amp; MLOps"><i class="fa-solid fa-check pill-check"></i><span>GPU/MLOps 인프라</span></button>
+                    <button type="button" class="select-pill activity-pill-btn" data-activity="컴퓨터 비전 (Computer Vision)"><i class="fa-solid fa-check pill-check"></i><span>컴퓨터 비전</span></button>
+                    <button type="button" class="select-pill activity-pill-btn" data-activity="자연어 처리 (NLP &amp; LLM)"><i class="fa-solid fa-check pill-check"></i><span>자연어처리 (NLP)</span></button>
+                  </div>
+                  <input type="text" id="desired_activities" name="desired_activities" placeholder="위 블록을 클릭하거나 직접 입력해주세요 (예: AI 예지 보전, 의료 AI, 자율주행 등)" class="form-input">
+                </div>
+
+                <!-- 면접 가능 시간 -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label for="interview_available_times" class="text-xs font-semibold text-slate-300">
+                      면접 참석 가능한 모든 요일 및 시간대 <span class="text-rose-400">*</span>
+                    </label>
+                    <span class="text-[11px] text-purple-400 font-mono">블록 클릭 시 자동 선택 (복수 선택)</span>
+                  </div>
+
+                  <!-- 요일 선택 블록 -->
+                  <div class="mb-2">
+                    <span class="text-[11px] font-semibold text-slate-400 block mb-1.5 flex items-center gap-1.5">
+                      <i class="fa-regular fa-calendar-check text-purple-400"></i> 가능 요일 선택:
+                    </span>
+                    <div class="flex flex-wrap gap-2" id="interview-days-container">
+                      <button type="button" data-schedule="월요일" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>월요일</span></button>
+                      <button type="button" data-schedule="화요일" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>화요일</span></button>
+                      <button type="button" data-schedule="수요일" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>수요일</span></button>
+                      <button type="button" data-schedule="목요일" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>목요일</span></button>
+                      <button type="button" data-schedule="금요일" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>금요일</span></button>
+                      <button type="button" data-schedule="주말(토/일)" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>주말 (토/일)</span></button>
+                      <button type="button" data-schedule="평일 언제든 가능" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>평일 언제든 가능</span></button>
+                    </div>
+                  </div>
+
+                  <!-- 시간대 선택 블록 -->
+                  <div class="mb-2.5">
+                    <span class="text-[11px] font-semibold text-slate-400 block mb-1.5 flex items-center gap-1.5">
+                      <i class="fa-regular fa-clock text-purple-400"></i> 가능 시간대 선택:
+                    </span>
+                    <div class="flex flex-wrap gap-2" id="interview-times-container">
+                      <button type="button" data-schedule="오전 (09:00~12:00)" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>오전 (09:00~12:00)</span></button>
+                      <button type="button" data-schedule="오후 A (13:00~15:00)" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>오후 A (13:00~15:00)</span></button>
+                      <button type="button" data-schedule="오후 B (15:00~18:00)" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>오후 B (15:00~18:00)</span></button>
+                      <button type="button" data-schedule="저녁 (18:00 이후)" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>저녁 (18:00 이후)</span></button>
+                      <button type="button" data-schedule="시간대 협의 가능" class="select-pill interview-pill-btn"><i class="fa-solid fa-check pill-check"></i><span>시간대 협의 가능</span></button>
+                    </div>
+                  </div>
+
+                  <input type="text" id="interview_available_times" name="interview_available_times" required placeholder="위 블록을 클릭하거나 직접 입력해주세요 (예: 월요일, 목요일, 오후 (13:00~18:00))" class="form-input">
+                </div>
+
+                <!-- 포트폴리오 링크 및 첨부 -->
+                <div class="space-y-3">
+                  <div>
+                    <label for="portfolio_links" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                      포트폴리오 제출 (GitHub / Notion / 구글 드라이브 링크 등)
+                    </label>
+                    <input type="url" id="portfolio_links" name="portfolio_links" placeholder="https://github.com/your-id 또는 https://notion.so/..." class="form-input">
+                  </div>
+
+                  <!-- 다중 파일 첨부 UI -->
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <label class="text-xs font-semibold text-slate-300">
+                        이력서 / 포트폴리오 파일 첨부 (여러 개 첨부 가능)
+                      </label>
+                      <span id="files-summary-count" class="text-[11px] font-mono text-sky-400 hidden">0개 선택됨</span>
+                    </div>
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="file_attachment" name="file_attachment" multiple accept=".pdf,.zip,.hwp,.docx,.pptx,.png,.jpg,.jpeg" class="hidden">
+
+                    <!-- Accessible Clickable Dropzone Label -->
+                    <label for="file_attachment" id="file-drop-zone" class="block border-2 border-dashed border-white/10 hover:border-sky-400/60 rounded-xl p-6 text-center cursor-pointer transition-all bg-white/5 hover:bg-sky-500/5 group">
+                      <div class="flex flex-col items-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400 group-hover:scale-110 group-hover:bg-sky-500/20 transition-all">
+                          <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                        </div>
+                        <div>
+                          <span id="file-label-text" class="text-xs text-slate-200 font-semibold block">클릭하여 파일 선택 또는 여기로 드래그 &amp; 드롭</span>
+                          <span class="text-[11px] text-slate-400 block mt-0.5">PDF, ZIP, HWP, DOCX, PPTX, 이미지 파일 등 (복수 파일 추가 가능)</span>
+                        </div>
+                        <div class="mt-1">
+                          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-sky-500/10 text-sky-300 border border-sky-500/30 font-medium group-hover:bg-sky-500/20 transition-colors">
+                            <i class="fa-solid fa-folder-open"></i> 내 PC에서 파일 찾기
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+
+                    <!-- Selected Files Container -->
+                    <div id="selected-files-container" class="hidden mt-3 space-y-2">
+                      <div class="flex items-center justify-between px-1 text-xs text-slate-400 pb-1 border-b border-white/5">
+                        <span id="files-total-stats" class="font-mono text-sky-300 font-semibold">첨부 파일 목록 (0개)</span>
+                        <button type="button" id="clear-all-files-btn" class="text-rose-400 hover:text-rose-300 hover:underline text-[11px]">
+                          <i class="fa-solid fa-trash-can mr-1"></i>전체 삭제
+                        </button>
+                      </div>
+                      <div id="selected-files-list" class="space-y-1.5 max-h-56 overflow-y-auto pr-1"></div>
+                    </div>
+                  </div>
+
+                  <p class="text-[11px] text-slate-400">
+                    * 구글 드라이브나 노션의 경우 '링크가 있는 모든 사용자에게 보기 허용' 권한인지 확인해 주세요.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Submit Action Area -->
+            <div class="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="text-xs text-slate-400 text-center sm:text-left">
+                제출 시 지원서 사본 JSON 파일이 자동 다운로드되며,<br class="hidden sm:inline">
+                오류 발생 시에도 안전한 이메일 전송 백업이 제공됩니다.
+              </div>
+
+              <button type="submit" id="submit-btn" class="btn-glow-primary w-full sm:w-auto px-8 py-3.5 text-base whitespace-nowrap">
+                <i id="submit-btn-spinner" class="fa-solid fa-circle-notch fa-spin hidden"></i>
+                <span id="submit-btn-text">🚀 지원서 공식 접수하기</span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ======================================================================
+         8. FOOTER
+         ====================================================================== -->
+    <footer class="glass-header border-t border-white/5 py-12 text-slate-400 text-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-white/10">
+          
+          <!-- Logo & Identity -->
+          <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-sky-400 to-indigo-500 flex-shrink-0">
+              <img src="assets/logo.png" alt="AIONE LAB 공식 로고" class="w-full h-full object-contain rounded-full bg-slate-900/60">
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-white tracking-wide">AIONE LAB</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">SINCE 2023</span>
+              </div>
+              <span class="text-slate-400 block text-[11px]">Artificial Intelligence Operation for Network and Energy</span>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Links -->
+          <div class="flex flex-wrap items-center justify-center gap-6 text-slate-300">
+            <a href="#about" class="hover:text-sky-400 transition-colors">연구실 소개</a>
+            <a href="#servers" class="hover:text-sky-400 transition-colors">서버 스펙</a>
+            <a href="#members" class="hover:text-sky-400 transition-colors">연구진</a>
+            <a href="#benefits" class="hover:text-sky-400 transition-colors">지원 혜택</a>
+            <a href="#apply" class="hover:text-sky-400 transition-colors">지원서 작성</a>
+            <a href="https://sites.google.com/view/aionelab/publications?authuser=0" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">
+              논문·특허 실적 ↗
+            </a>
+            <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline">
+              공식 Google Site ↗
+            </a>
+            <a href="https://och7905.github.io/Personal_Website_Deployment/" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">
+              랩장 포트폴리오 ↗
+            </a>
+          </div>
+
+        </div>
+
+        <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-slate-400">
+          <p>© 2026 AIONE LAB. All Rights Reserved. 대전광역시 동구 대학로 62 대전대학교 서문 방면 융합과학관 217호 &amp; 330호</p>
+          <p class="font-mono text-[11px]">Lab Leader: <a href="mailto:och7905@naver.com" class="hover:text-sky-400 underline">och7905@naver.com</a> / 010-9347-7906</p>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+
+  <!-- ======================================================================
+       MODAL 1: SUBMISSION SUCCESS
+       ====================================================================== -->
+  <div id="success-modal" class="modal-backdrop">
+    <div class="modal-content text-center">
+      <div class="relative w-16 h-16 rounded-full mx-auto mb-4 p-0.5 bg-gradient-to-tr from-amber-400 via-sky-400 to-emerald-400 shadow-lg shadow-emerald-500/20">
+        <img src="assets/logo.png" alt="AIONE LAB 공식 로고" class="w-full h-full object-contain rounded-full bg-slate-900">
+        <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs shadow-md">
+          <i class="fa-solid fa-check"></i>
+        </div>
+      </div>
+
+      <h3 class="text-2xl font-bold text-white mb-2">지원서 접수 완료!</h3>
+      <p class="text-xs text-sky-400 font-mono mb-4" id="modal-applicant-name">지원자님</p>
+
+      <div class="p-4 rounded-xl bg-white/5 border border-white/10 text-left text-xs text-slate-300 space-y-2 mb-6">
+        <p class="flex items-start gap-2">
+          <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+          <span>지원서가 <strong>och7905@naver.com</strong> 랩장 메일함으로 정상 전송되었습니다.</span>
+        </p>
+        <p class="flex items-start gap-2">
+          <i class="fa-solid fa-file-arrow-down text-sky-400 mt-0.5"></i>
+          <span>지원자 백업 보관용 JSON 파일이 내 컴퓨터(다운로드 폴더)에 자동 저장되었습니다.</span>
+        </p>
+        <p class="flex items-start gap-2">
+          <i class="fa-solid fa-clock text-amber-400 mt-0.5"></i>
+          <span>서류 검토 후 기재해 주신 연락처로 면접 일정을 개별 안내해 드리겠습니다.</span>
+        </p>
+      </div>
+
+      <button type="button" class="btn-glow-primary w-full py-3 text-sm modal-close-btn">
+        확인 및 닫기
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ======================================================================
+       MODAL 2: SUBMISSION ERROR / FALLBACK
+       ====================================================================== -->
+  <div id="error-modal" class="modal-backdrop">
+    <div class="modal-content text-center">
+      <div class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto mb-5 text-2xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+
+      <h3 class="text-2xl font-bold text-white mb-2">네트워크 전송 지연 발생</h3>
+      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+        일시적인 Formspree 통신 오류가 발생했습니다.<br>
+        <strong>지원서 내용은 안전하게 보존되었으며, 백업 파일이 다운로드되었습니다.</strong>
+      </p>
+
+      <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-left text-xs text-slate-300 space-y-2 mb-6">
+        <p>지원서 유실을 방지하기 위해 작성하신 내용이 담긴 이메일 수동 발송 링크를 즉시 연결해 드립니다.</p>
+      </div>
+
+      <div class="flex flex-col gap-2.5">
+        <a id="error-mailto-btn" href="#" class="btn-glow-primary w-full py-3 text-sm justify-center">
+          <i class="fa-solid fa-envelope"></i>
+          <span>이메일(och7905@naver.com)로 즉시 전송</span>
+        </a>
+        <button type="button" class="btn-glow-secondary w-full py-2.5 text-xs modal-close-btn">
+          창 닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/canvas.js?v=20261029_03"></script>
+  <script src="js/main.js?v=20261029_03"></script>
+  <script src="js/form.js?v=20261029_03"></script>
+
+</body>
+</html>
