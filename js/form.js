@@ -419,7 +419,16 @@
     const wrapper = document.getElementById('pdf-render-wrapper');
     const page1 = document.getElementById('pdf-page-1');
     const page2 = document.getElementById('pdf-page-2');
-    if (!wrapper || !page1 || !page2) return null;
+    if (!wrapper || !page1 || !page2) {
+      console.error('PDF template elements not found in DOM');
+      return null;
+    }
+
+    // Save previous scroll position and body layout styles
+    const prevScrollX = window.scrollX || window.pageXOffset || 0;
+    const prevScrollY = window.scrollY || window.pageYOffset || 0;
+    const prevBodyMinWidth = document.body.style.minWidth;
+    const prevBodyOverflowX = document.body.style.overflowX;
 
     try {
       // 1. Populate text fields for both Page 1 and Page 2
@@ -460,16 +469,26 @@
 
       const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
 
-      // 2. Position wrapper at fixed (0, 0)
+      // 2. Normalize viewport & body to eliminate any coordinate displacement or mobile clipping
+      window.scrollTo(0, 0);
+      document.body.style.minWidth = '794px';
+      document.body.style.overflowX = 'visible';
+
+      // 3. Position wrapper cleanly at the top-left origin (width 794px fixed)
       wrapper.style.display = 'block';
-      wrapper.style.position = 'fixed';
+      wrapper.style.position = 'absolute';
       wrapper.style.top = '0px';
       wrapper.style.left = '0px';
       wrapper.style.width = '794px';
-      wrapper.style.zIndex = '-99999';
+      wrapper.style.minWidth = '794px';
+      wrapper.style.maxWidth = '794px';
+      wrapper.style.margin = '0px';
+      wrapper.style.padding = '0px';
+      wrapper.style.zIndex = '999999';
       wrapper.style.opacity = '1';
+      wrapper.style.background = '#ffffff';
 
-      // Capture options for pixel-perfect A4 96DPI -> 2x scale = 1588 x 2246
+      // Capture options for pixel-perfect A4 96DPI -> 2x scale = 1588 x 2246 (zero clipping)
       const canvasOptions = {
         scale: 2,
         useCORS: true,
@@ -478,67 +497,116 @@
         width: 794,
         height: 1123,
         windowWidth: 794,
+        windowHeight: 1123,
+        x: 0,
+        y: 0,
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+          clonedDoc.documentElement.style.width = '794px';
+          clonedDoc.documentElement.style.minWidth = '794px';
+          clonedDoc.documentElement.style.overflow = 'visible';
+          clonedDoc.body.style.width = '794px';
+          clonedDoc.body.style.minWidth = '794px';
+          clonedDoc.body.style.overflow = 'visible';
+          clonedDoc.body.style.overflowX = 'visible';
+          clonedDoc.body.style.margin = '0';
+          clonedDoc.body.style.padding = '0';
+          const clonedWrapper = clonedDoc.getElementById('pdf-render-wrapper');
+          if (clonedWrapper) {
+            clonedWrapper.style.display = 'block';
+            clonedWrapper.style.position = 'static';
+            clonedWrapper.style.margin = '0';
+            clonedWrapper.style.padding = '0';
+            clonedWrapper.style.width = '794px';
+            clonedWrapper.style.minWidth = '794px';
+          }
+        }
       };
 
-      // Step A: Capture Page 1 (isolated at top 0)
-      page1.style.display = 'block';
-      page2.style.display = 'none';
-      await new Promise(resolve => setTimeout(resolve, 150));
-      const canvas1 = await html2canvas(page1, canvasOptions);
+      const html2canvasFunc = window.html2canvas;
+      const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
 
-      // Step B: Capture Page 2 (isolated at top 0)
-      page1.style.display = 'none';
-      page2.style.display = 'block';
-      await new Promise(resolve => setTimeout(resolve, 150));
-      const canvas2 = await html2canvas(page2, canvasOptions);
-
-      // Restore display
-      page1.style.display = 'block';
-      page2.style.display = 'block';
-      wrapper.style.display = 'none';
-
-      // Step C: Assemble 2-page PDF via jsPDF
-      const jsPDFClass = window.jsPDF || window.jspdf?.jsPDF;
       let pdfBlob = null;
 
-      if (jsPDFClass) {
-        const doc = new jsPDFClass({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4',
-          compress: true
-        });
+      if (html2canvasFunc && jsPDFClass) {
+        // Step A: Capture Page 1 (isolated at top 0)
+        page1.style.display = 'block';
+        page2.style.display = 'none';
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const canvas1 = await html2canvasFunc(page1, canvasOptions);
 
-        // Add Page 1
+        // Step B: Capture Page 2 (isolated at top 0)
+        page1.style.display = 'none';
+        page2.style.display = 'block';
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const canvas2 = await html2canvasFunc(page2, canvasOptions);
+
+        // Restore DOM state
+        page1.style.display = 'block';
+        page2.style.display = 'block';
+        wrapper.style.display = 'none';
+        document.body.style.minWidth = prevBodyMinWidth;
+        document.body.style.overflowX = prevBodyOverflowX;
+        window.scrollTo(prevScrollX, prevScrollY);
+
+        // Step C: Assemble 2-page PDF via jsPDF (Universal positional constructor)
+        const doc = new jsPDFClass('portrait', 'mm', 'a4');
+
+        // Add Page 1 (Full bleed A4: 210mm x 297mm)
         const img1 = canvas1.toDataURL('image/jpeg', 0.98);
         doc.addImage(img1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
-        // Add Page 2
+        // Add Page 2 (Full bleed A4: 210mm x 297mm)
         doc.addPage('a4', 'portrait');
         const img2 = canvas2.toDataURL('image/jpeg', 0.98);
         doc.addImage(img2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
-        // Save locally to applicant's download folder
-        doc.save(filename);
-
         // Extract Blob
         pdfBlob = doc.output('blob');
+
+        // Step D: Trigger instant download to applicant PC (Multi-browser safe)
+        try {
+          doc.save(filename);
+        } catch (saveErr) {
+          console.warn('doc.save fallback to blob anchor:', saveErr);
+          const blobUrl = URL.createObjectURL(pdfBlob);
+          const anchor = document.createElement('a');
+          anchor.href = blobUrl;
+          anchor.download = filename;
+          document.body.appendChild(anchor);
+          anchor.click();
+          setTimeout(() => {
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(blobUrl);
+          }, 2000);
+        }
+
       } else if (typeof html2pdf !== 'undefined') {
-        const template = document.getElementById('pdf-application-template');
+        page1.style.display = 'block';
+        page2.style.display = 'block';
         wrapper.style.display = 'block';
+        window.scrollTo(0, 0);
+
+        const template = document.getElementById('pdf-application-template');
         const opt = {
           margin: 0,
           filename: filename,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 794 },
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 794, width: 794, x: 0, y: 0 },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         const worker = html2pdf().set(opt).from(template);
         await worker.save();
-        pdfBlob = await worker.output('blob');
+        try {
+          pdfBlob = await worker.output('blob');
+        } catch (bErr) {}
         wrapper.style.display = 'none';
+        document.body.style.minWidth = prevBodyMinWidth;
+        document.body.style.overflowX = prevBodyOverflowX;
+        window.scrollTo(prevScrollX, prevScrollY);
+      } else {
+        throw new Error('No PDF generation library (html2canvas / jsPDF / html2pdf) available in global scope.');
       }
 
       return { filename, pdfBlob };
@@ -547,12 +615,15 @@
       if (wrapper) wrapper.style.display = 'none';
       if (page1) page1.style.display = 'block';
       if (page2) page2.style.display = 'block';
+      document.body.style.minWidth = prevBodyMinWidth;
+      document.body.style.overflowX = prevBodyOverflowX;
+      window.scrollTo(prevScrollX, prevScrollY);
     }
     return null;
   }
 
   // --------------------------------------------------------------------------
-  // Applicant Data Encoding & Online Viewing Link Generation
+  // Applicant Data Encoding & Online Viewing Link Generation (URL-Safe)
   // --------------------------------------------------------------------------
   function createApplicantViewerLink(data) {
     try {
@@ -581,18 +652,20 @@
       for (let idx = 0; idx < utf8Bytes.length; idx++) {
         binary += String.fromCharCode(utf8Bytes[idx]);
       }
-      const b64 = btoa(binary);
+      // URL-safe Base64: replace '+' with '-', '/' with '_', remove '='
+      const urlSafeB64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
       // Determine robust base URL (fallback to official GitHub Pages URL if testing on local file)
       let baseUrl = 'https://och7905.github.io/AIONE_LAB/';
       if (window.location.protocol.startsWith('http') && !window.location.hostname.includes('localhost')) {
         baseUrl = window.location.origin + window.location.pathname;
+        baseUrl = baseUrl.split('?')[0].split('#')[0];
         if (!baseUrl.endsWith('/') && !baseUrl.endsWith('.html')) {
           baseUrl += '/';
         }
       }
 
-      return `${baseUrl}?view_app=${encodeURIComponent(b64)}`;
+      return `${baseUrl}?view_app=${urlSafeB64}`;
     } catch (err) {
       console.error('Failed to create viewer link:', err);
       return `https://och7905.github.io/AIONE_LAB/?applicant=${encodeURIComponent(data.name)}`;
@@ -601,7 +674,13 @@
 
   function decodeApplicantData(raw) {
     try {
-      const binary = atob(decodeURIComponent(raw));
+      if (!raw) return null;
+      // Restore URL-safe Base64: '-' -> '+', '_' -> '/', ' ' -> '+', pad with '='
+      let base64 = raw.replace(/-/g, '+').replace(/_/g, '/').replace(/ /g, '+');
+      while (base64.length % 4 !== 0) {
+        base64 += '=';
+      }
+      const binary = atob(base64);
       const bytes = new Uint8Array(binary.length);
       for (let idx = 0; idx < binary.length; idx++) {
         bytes[idx] = binary.charCodeAt(idx);
@@ -689,14 +768,32 @@
       clone1.style.display = 'block';
       clone1.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 15px rgba(0,0,0,0.4)';
       clone1.style.borderRadius = '2px';
-      clone1.style.maxWidth = '100%';
+      clone1.style.width = '794px';
+      clone1.style.height = '1123px';
+      clone1.style.background = '#ffffff';
 
       const clone2 = page2.cloneNode(true);
       clone2.id = 'viewer-clone-page-2';
       clone2.style.display = 'block';
       clone2.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 15px rgba(0,0,0,0.4)';
       clone2.style.borderRadius = '2px';
-      clone2.style.maxWidth = '100%';
+      clone2.style.width = '794px';
+      clone2.style.height = '1123px';
+      clone2.style.background = '#ffffff';
+
+      // Responsive mobile scale (< 820px)
+      const isMobile = window.innerWidth < 820;
+      if (isMobile) {
+        const availableWidth = Math.max(300, window.innerWidth - 48);
+        const scale = availableWidth / 794;
+        clone1.style.transform = `scale(${scale})`;
+        clone1.style.transformOrigin = 'top center';
+        clone1.style.marginBottom = `${-(1123 * (1 - scale))}px`;
+
+        clone2.style.transform = `scale(${scale})`;
+        clone2.style.transformOrigin = 'top center';
+        clone2.style.marginBottom = `${-(1123 * (1 - scale))}px`;
+      }
 
       container.appendChild(clone1);
       container.appendChild(clone2);
@@ -706,7 +803,7 @@
     if (downloadBtn) {
       downloadBtn.onclick = async () => {
         downloadBtn.disabled = true;
-        downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>PDF 생성 중...</span>';
+        downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>PDF 생성 및 다운로드 중...</span>';
         await generateApplicationPDF(data);
         downloadBtn.disabled = false;
         downloadBtn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i><span>공식 PDF 다운로드</span>';
@@ -742,6 +839,15 @@
         const data = decodeApplicantData(raw);
         if (data && (data.name || data.student_id)) {
           openApplicantViewerModal(data);
+
+          // If direct auto-download is requested via URL parameter
+          const wantsDownload = searchParams.get('download_pdf') === '1' || window.location.href.includes('download_pdf=1');
+          if (wantsDownload) {
+            window.showToast?.('📥 지원서 공식 PDF 다운로드를 시작합니다...');
+            setTimeout(() => {
+              generateApplicationPDF(data);
+            }, 600);
+          }
         }
       }
     } catch (err) {
@@ -779,7 +885,12 @@
 
     try {
       // Step A: Generate PDF and auto-download 2-page document to applicant PC
-      const pdfResult = await generateApplicationPDF(data);
+      let pdfResult = null;
+      try {
+        pdfResult = await generateApplicationPDF(data);
+      } catch (pdfErr) {
+        console.error('generateApplicationPDF error:', pdfErr);
+      }
       const filename = pdfResult?.filename || `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
 
       // Step B: Create Permanent Online PDF Viewing Link (never expires, 100% CORS-safe)
@@ -793,7 +904,8 @@
         _subject: emailSubject,
         email: CONTACT_EMAIL,
         _replyto: CONTACT_EMAIL,
-        "생성된_지원서_공식_PDF_열람링크": viewerUrl,
+        "0_공식_지원서_PDF_온라인_열람_링크": viewerUrl,
+        "0_공식_지원서_PDF_즉시_다운로드_링크": `${viewerUrl}&download_pdf=1`,
         "1_성명": data.name,
         "2_학번": data.student_id,
         "3_지원구분_학년": data.grade,
@@ -809,7 +921,8 @@
         "13_연구실_희망활동": data.desired_activities || "없음",
         "14_면접가능시간": data.interview_available_times,
         "15_포트폴리오링크": data.portfolio_links || "없음",
-        "16_공식_지원서_PDF": `${filename} (지원자 PC 다운로드 완료 / 위 열람링크에서 언제든 PDF 열람 및 재다운로드 가능)`,
+        "16_공식_지원서_PDF_열람_및_다운로드_링크": `${viewerUrl}&download_pdf=1`,
+        "16_1_지원서_PDF_파일명": filename,
         "17_접수일시": new Date().toLocaleString('ko-KR')
       };
 
