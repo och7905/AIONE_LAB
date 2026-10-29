@@ -412,6 +412,7 @@
   }
 
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   // PDF Generation System (Official Form Template via html2pdf)
   // --------------------------------------------------------------------------
   async function generateApplicationPDF(data) {
@@ -420,7 +421,7 @@
     if (!template || !wrapper) return null;
 
     try {
-      // 1. Populate text fields
+      // 1. Populate text fields for both Page 1 and Page 2
       const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = val || '-';
@@ -440,6 +441,11 @@
 
       setVal('pdf-val-keyword', data.keyword_intro);
       setVal('pdf-val-motivation', data.motivation);
+
+      // Page 2 header & fields
+      setVal('pdf-val-page2-name', data.name);
+      setVal('pdf-val-page2-student-id', data.student_id);
+
       setVal('pdf-val-problem', data.problem_solving);
       setVal('pdf-val-study', data.study_plan);
       setVal('pdf-val-expectation', data.expectation);
@@ -451,15 +457,15 @@
 
       const filename = `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf`;
 
-      // 2. Make template active at (0, 0) behind the webpage content
+      // 2. Position template at top-left behind webpage content for clean rendering
       wrapper.style.display = 'block';
-      wrapper.style.position = 'fixed';
+      wrapper.style.position = 'absolute';
       wrapper.style.top = '0px';
       wrapper.style.left = '0px';
       wrapper.style.zIndex = '-99999';
       wrapper.style.opacity = '1';
 
-      // Allow 200ms for browser to paint fonts and DOM layout
+      // Allow 200ms for browser to render layout and fonts
       await new Promise(resolve => setTimeout(resolve, 200));
 
       let pdfBlob = null;
@@ -474,16 +480,20 @@
             logging: false,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: 794
+            x: 0,
+            y: 0
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          pagebreak: {
+            mode: ['css', 'legacy'],
+            before: '.html2pdf__page-break'
+          }
         };
 
-        // Render PDF directly to user's computer
+        // Render PDF directly to user's download folder
         await html2pdf().set(opt).from(template).save();
 
-        // Obtain Blob for optional Google Apps Script attachment
+        // Obtain Blob if Google Apps Script attachment is enabled
         if (GOOGLE_APPS_SCRIPT_URL) {
           pdfBlob = await html2pdf().set(opt).from(template).output('blob');
         }
@@ -524,22 +534,69 @@
 
     const data = collectFormData();
 
-    // 1. Loading state: Generating PDF
-    setLoadingState(true, '지원서 PDF 공식 양식 생성 중...');
+    // 1. Loading state: Generating PDF and sending notification
+    setLoadingState(true, '지원서 공식 양식 PDF 생성 및 전송 중...');
 
-    let pdfResult = null;
+    // 2. Construct robust Formspree payload with sender email & clean keys
+    const emailSubject = `[AIONE LAB 2026 연구원 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
+    const formspreePayload = {
+      _subject: emailSubject,
+      email: CONTACT_EMAIL,
+      _replyto: CONTACT_EMAIL,
+      applicant_name: data.name,
+      applicant_id: data.student_id,
+      applicant_grade: data.grade,
+      applicant_phone: data.phone,
+      applicant_military: data.military,
+      "1_성명": data.name,
+      "2_학번": data.student_id,
+      "3_지원구분_학년": data.grade,
+      "4_연락처": data.phone,
+      "5_병역구분": data.military,
+      "6_나를_표현하는_단어_이유": data.keyword_intro,
+      "7_지원동기": data.motivation,
+      "8_문제해결경험": data.problem_solving,
+      "9_학업계획": data.study_plan,
+      "10_얻고자하는것": data.expectation,
+      "11_진로계획": data.career_plan,
+      "12_기술스택_경험": data.tech_stack || "없음",
+      "13_연구실_희망활동": data.desired_activities || "없음",
+      "14_면접가능시간": data.interview_available_times,
+      "15_포트폴리오링크": data.portfolio_links || "없음",
+      "16_공식_지원서_PDF": `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf (지원자 PC 다운로드 완료)`,
+      "17_접수일시": new Date().toLocaleString('ko-KR')
+    };
 
     try {
-      // Step A. Generate and auto-download official application PDF
-      pdfResult = await generateApplicationPDF(data);
+      // Step A & Step B: Concurrent execution of Formspree email dispatch & PDF generation
+      const formspreePromise = fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formspreePayload)
+      }).then(async (res) => {
+        console.log('Formspree response status:', res.status);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Formspree response warning:', errData);
+        }
+        return res;
+      }).catch((err) => {
+        console.warn('Formspree network warning:', err);
+        return null;
+      });
 
-      setLoadingState(true, '지원서 내역 이메일 전송 중...');
+      const pdfPromise = generateApplicationPDF(data);
 
-      // Step B. If Google Apps Script WebApp is configured, send actual PDF attachment
+      const [formspreeRes, pdfResult] = await Promise.all([formspreePromise, pdfPromise]);
+
+      // Step C. If Google Apps Script WebApp is configured, send actual PDF attachment
       if (GOOGLE_APPS_SCRIPT_URL && pdfResult?.pdfBlob) {
         try {
           const pdfBase64 = await blobToBase64(pdfResult.pdfBlob);
-          await fetch(GOOGLE_APPS_SCRIPT_URL, {
+          fetch(GOOGLE_APPS_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
@@ -548,59 +605,23 @@
               pdfBase64: pdfBase64,
               filename: pdfResult.filename
             })
-          });
+          }).catch((gasErr) => console.warn('Google Apps Script warning:', gasErr));
         } catch (gasErr) {
           console.warn('Google Apps Script submission warning:', gasErr);
         }
       }
 
-      // Step C. Send clean email notification via Formspree (without any third-party upload links)
-      const emailSubject = `[AIONE LAB 신규 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
-      const payload = {
-        _subject: emailSubject,
-        "성명": data.name,
-        "학번": data.student_id,
-        "지원구분_학년": data.grade,
-        "연락처": data.phone,
-        "병역구분": data.military,
-        "나를표현하는단어_이유": data.keyword_intro,
-        "지원동기(500자)": data.motivation,
-        "문제해결경험(500자)": data.problem_solving,
-        "학업계획(200자)": data.study_plan,
-        "얻고자하는것(200자)": data.expectation,
-        "졸업후진로계획(200자)": data.career_plan,
-        "기술스택_경험": data.tech_stack || "없음",
-        "연구실희망활동": data.desired_activities || "없음",
-        "면접가능시간": data.interview_available_times,
-        "포트폴리오링크": data.portfolio_links || "없음",
-        "공식_지원서_PDF_생성": `AIONE_2026_지원서_${data.student_id}_${data.name}.pdf (지원자 PC 다운로드 완료)`,
-        "제출일시": new Date().toLocaleString('ko-KR')
-      };
-
-      const response = await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
+      // Complete submission
+      localStorage.removeItem(STORAGE_KEY);
+      downloadBackupJSON(data);
+      showSuccessModal(data);
+      form.reset();
+      charLimitFields.forEach(({ limit, counterId }) => {
+        const counter = document.getElementById(counterId);
+        if (counter) counter.textContent = `0 / ${limit}자`;
       });
+      syncAllPills();
 
-      if (response.ok) {
-        // Success
-        localStorage.removeItem(STORAGE_KEY);
-        downloadBackupJSON(data);
-        showSuccessModal(data);
-        form.reset();
-        charLimitFields.forEach(({ limit, counterId }) => {
-          const counter = document.getElementById(counterId);
-          if (counter) counter.textContent = `0 / ${limit}자`;
-        });
-        syncAllPills();
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Formspree 전송 오류');
-      }
     } catch (error) {
       console.error('Submission failed:', error);
       handleSubmissionError(data, error);
