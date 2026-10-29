@@ -932,11 +932,10 @@
 
       setLoadingState(true, '지원서 내역 이메일 발송 중...');
 
-      // Step C: Construct Formspree payload with direct PDF viewing link prominently featured
+      // Step C: Construct Formspree payload with single unified PDF viewing & download link
       const emailSubject = `[AIONE LAB 2026 지원서] ${data.name} (${data.student_id} / ${data.grade})`;
       const formspreePayload = {
         _subject: emailSubject,
-        "0_공식_지원서_온라인_열람_및_다운로드": `${viewerUrl}&download_pdf=1`,
         "1_성명": data.name,
         "2_학번": data.student_id,
         "3_지원구분_학년": data.grade,
@@ -952,7 +951,7 @@
         "13_연구실_희망활동": data.desired_activities || "없음",
         "14_면접가능시간": data.interview_available_times,
         "15_포트폴리오링크": data.portfolio_links || "없음",
-        "16_공식_지원서_파일명": filename,
+        "16_공식_지원서_PDF_열람_및_다운로드_링크": `${viewerUrl}&download_pdf=1`,
         "17_접수일시": new Date().toLocaleString('ko-KR')
       };
 
