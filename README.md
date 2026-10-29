@@ -169,268 +169,68 @@ AIONE LAB/
 
 ---
 
-## 🔒 관리자 전용 웹 포털 & 구글 스프레드시트 DB 연동 가이드 (Option 1)
+## 🔒 관리자 전용 웹 포털 & 구글 드라이브/스프레드시트 DB 연동 가이드
 
-> 💡 **웹사이트 내에서 비밀번호를 입력하고 접속하여 모든 지원자의 지원 현황을 한눈에 조회하고, 공식 2-Page PDF를 즉시 다운로드받을 수 있는 관리자 시스템입니다.**
+> 💡 **웹사이트 내에서 관리자 비밀번호를 입력하고 접속하여 실시간 지원자 현황 조회, 2-Page 공식 규격 PDF 즉시 다운로드, 지원서 삭제, 엑셀(CSV) 일괄 내보내기 등을 수행하는 독립 관리자 시스템입니다.**
 
 ### 1. 웹사이트 관리자 포털 접속 방법
-1. **푸터(하단 바)**: 최하단 랩장 정보 옆 **`[🔒 관리자 포털]`** 버튼 클릭
+1. **푸터(하단 바)**: 최하단 랩장 정보 우측 **`[🛡️ 관리자 포털]`** 버튼 클릭
 2. **사이드 네비게이션 드로어**: 우측 상단 `[MENU ☰]` 클릭 후 하단 **`[🛡️ 관리자 전용 포털]`** 메뉴 클릭
-3. **단축키**: 키보드 **`Ctrl + Shift + A`** (Mac은 `Cmd + Shift + A`) 누르면 즉시 팝업
-4. **관리자 기본 비밀번호**: **`aione2026!`** (원클릭으로 변경 가능)
-
-### 2. 관리자 비밀번호 변경 방법 (3가지 중 택1)
-- **방법 1 (가장 쉬움 · 웹에서 원클릭 변경)**:
-  - 웹사이트에서 관리자 포털 로그인 (`aione2026!`)
-  - 우측 상단 **`[⚙️ 설정]`** 아이콘 클릭
-  - **`관리자 비밀번호 변경`** 입력칸에 원하는 새 비밀번호 입력 후 **`[비밀번호 변경]`** 클릭!
-  - 즉시 브라우저에 저장되어 다음 로그인부터 새 비밀번호로 접속됩니다.
-- **방법 2 (구글 스프레드시트 연동 시 변경)**:
-  - 구글 스프레드시트 메뉴 > **[확장 프로그램] > [Apps Script]** 열기
-  - 상단 6번째 줄: `const ADMIN_PASSWORD = "새비밀번호";` 로 수정 후 저장
-  - 우측 상단 **[배포] > [배포 관리] > [수정(연필 아이콘)] > 버전: [새 버전] 선택 > [배포]** 클릭!
-- **방법 3 (소스 코드에서 영구 기본값 변경)**:
-  - [`js/form.js`](file:///c:/Users/오창현/Desktop/AIONE%20LAB/js/form.js) 파일의 `const ADMIN_PASSWORD_DEFAULT = '새비밀번호';` 수정 후 저장.
-
-### 3. 관리자 포털 핵심 기능
-- **실시간 통계 바**: 전체 지원자 수, 학부연구생(2학년 6기 / 3학년) 수, 석사신입생 수 실시간 집계
-- **실시간 검색 및 필터**: 이름, 학번, 기술스택, 지원동기 검색 및 학년 구분 필터링
-- **원클릭 공식 PDF 다운로드 (`[📄 PDF]`)**: 선택한 지원자의 2-Page 공식 입실지원서 PDF를 브라우저에서 즉시 정밀 렌더링하여 다운로드
-- **지원서 미리보기 (`[👁️ 보기]`)**: 브라우저 팝업으로 2-Page 공식 서류를 바로 열람 및 인쇄
-- **정보 클립보드 복사 (`[📋]`)**: 지원자 연락처 및 핵심 면접 정보 원클릭 복사
-- **전체 명단 CSV 엑셀 다운로드 (`[📥 CSV 내보내기]`)**: 한글 깨짐이 없는 UTF-8 BOM 인코딩으로 Microsoft Excel 완벽 호환
-- **듀얼 동기화 엔진**:
-  - 구글 시트 연동 전에도 브라우저 로컬 저장소(`localStorage`)에 자동 보관되어 **즉시 로컬 테스트 가능**
-  - 구글 앱스 스크립트(GAS) Web App URL 등록 시 **구글 스프레드시트와 실시간 양방향 동기화**
+3. **단축키**: 키보드 **`Ctrl + Shift + A`** (Mac은 `Cmd + Shift + A`) 누르면 원클릭 즉시 팝업
+4. **보안 체계 (SHA-256 단방향 암호화 해시)**:
+   - GitHub 공개 저장소 및 프론트엔드 소스코드 어디에도 **실제 비밀번호 평문이 단 1글자도 노출되지 않습니다**.
+   - 수학적으로 역산(복호화)이 불가능한 SHA-256 해시값만 비교하므로 외부 해커나 열람자로부터 관리자 권한이 완벽히 보호됩니다.
 
 ---
 
-### 4. 구글 스프레드시트 DB 및 웹앱 연동 3단계 가이드 (100% 무료)
+### 2. 관리자 비밀번호 변경 방법 (웹에서 원클릭 변경)
+- 관리자 포털 로그인 후 우측 상단 **`[⚙️ 설정]`** 아이콘 클릭
+- **`관리자 비밀번호 변경 (웹사이트 접속용)`** 입력칸에 원하는 새 비밀번호 입력 후 **`[비밀번호 변경]`** 클릭!
+- 즉시 브라우저에서 단방향 SHA-256 해시로 암호화되어 안전하게 저장되며, 다음 로그인부터는 변경된 새 비밀번호로만 접속됩니다. (구버전 비밀번호는 즉시 차단)
+
+---
+
+### 3. 관리자 포털 핵심 기능
+- **실시간 통계 바**: 전체 지원자 수, 학부연구생(예비 2학년 6기 / 재학생) 수, 석사신입생 수 실시간 자동 집계
+- **실시간 검색 및 필터**: 성명, 학번, 기술스택, 자기소개 키워드 검색 및 학년 구분 필터링
+- **원클릭 공식 PDF 다운로드 (`[📄 PDF]`)**: 선택한 지원자의 2-Page 공식 규격 입실지원서 PDF를 관리자 PC로 즉시 생성 및 다운로드
+- **지원서 미리보기 (`[👁️ 보기]`)**: 웹 브라우저 내에서 지원자의 2페이지 전체 서류(자기소개, 연구계획서 등)를 원본 형태로 즉시 열람 및 인쇄
+- **정보 클립보드 복사 (`[📋]`)**: 지원자 연락처 및 핵심 면접 정보 원클릭 복사
+- **지원서 삭제 (`[🗑️]`)**: 테스트 또는 취소된 지원서를 관리자 포털 및 구글 시트에서 즉시 영구 삭제
+- **전체 명단 CSV 엑셀 다운로드 (`[📥 CSV 내보내기]`)**: 한글 깨짐이 없는 UTF-8 BOM 인코딩으로 Microsoft Excel 완벽 호환
+- **듀얼 동기화 엔진**:
+  - 구글 시트 연동 전에도 브라우저 로컬 저장소(`localStorage`)에 자동 보관되어 **오프라인/로컬 테스트 완벽 지원**
+  - 구글 앱스 스크립트(GAS) Web App URL 등록 시 **구글 드라이브 및 구글 스프레드시트와 실시간 양방향 동기화**
+
+---
+
+### 4. 구글 드라이브 PDF 자동 저장 & 스프레드시트 Webhook 연동 가이드
 
 #### [1단계] Google Spreadsheet 생성
 1. [구글 스프레드시트(sheets.new)](https://sheets.new)에 접속하여 새 문서를 생성합니다.
 2. 스프레드시트 제목을 `AIONE LAB 2026 지원자 명단 DB`로 설정합니다.
 
 #### [2단계] Apps Script 코드 붙여넣기
-1. 상단 메뉴에서 **[확장 프로그램] > [Apps Script]**를 클릭합니다.
-2. 기존의 `myFunction()`을 모두 지우고, 아래 **전체 코드**를 복사하여 붙여넣고 상단의 **[저장(💾)]**을 누릅니다:
+1. 스프레드시트 상단 메뉴에서 **[확장 프로그램] > [Apps Script]**를 클릭합니다.
+2. 기존 코드를 모두 지우고, 프로젝트 내 [`gas/Code.gs`](file:///c:/Users/오창현/Desktop/AIONE%20LAB/gas/Code.gs) 코드 전체를 복사하여 붙여넣은 뒤 상단 **[저장(💾)]**을 누릅니다.
+   - **지정 구글 드라이브 폴더**: `1MpmUBVRdnnOnz9AQByEbG1Kc25fMWy8R` (AIONE LAB 지원서 보관용)
+   - **알림 수신 이메일**: `och7905@naver.com` (오창현 랩장)
 
-```javascript
-/**
- * AIONE LAB 2026 연구원 지원자 관리 시스템 (Google Apps Script)
- * 구글 스프레드시트 자동 DB 기록 + 웹사이트 관리자 포털 실시간 연동 API
- */
-const DEFAULT_ADMIN_PASSWORD = "aione2026!"; // 초기 기본 비밀번호
-const NOTIFICATION_EMAIL = "och7905@naver.com"; // 알림 수신 네이버 이메일
-
-// 비밀번호 가져오기 (웹사이트에서 변경한 비밀번호가 있으면 실시간 우선 적용)
-function getAdminPassword() {
-  const prop = PropertiesService.getScriptProperties().getProperty("ADMIN_PASSWORD");
-  return prop || DEFAULT_ADMIN_PASSWORD;
-}
-
-// 비밀번호 저장하기 (구글 클라우드 보안 속성 저장소)
-function setAdminPassword(newPw) {
-  PropertiesService.getScriptProperties().setProperty("ADMIN_PASSWORD", newPw);
-}
-
-function doPost(e) {
-  try {
-    const sheet = getOrCreateApplicantSheet();
-    let data = {};
-    if (e.postData && e.postData.contents) {
-      data = JSON.parse(e.postData.contents);
-    } else if (e.parameter) {
-      data = e.parameter;
-    }
-
-    const timestamp = data.submitted_at || Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-
-    // 행 추가: A~Q열 (17개 컬럼)
-    sheet.appendRow([
-      timestamp,
-      data.name || "",
-      data.student_id || "",
-      data.grade || "",
-      data.phone || "",
-      data.military || "",
-      data.keyword_intro || "",
-      data.motivation || "",
-      data.problem_solving || "",
-      data.study_plan || "",
-      data.expectation || "",
-      data.career_plan || "",
-      data.tech_stack || "",
-      data.desired_activities || "",
-      data.interview_available_times || "",
-      data.portfolio_links || "",
-      JSON.stringify(data) // Q열: 원본 전체 JSON (웹사이트에서 1:1 완벽 복원용)
-    ]);
-
-    // 랩장 네이버 메일로 자동 알림 발송 (구글 공식 서버 발송으로 스팸 차단 100% 우회)
-    try {
-      const subject = `[AIONE LAB 2026 신규 지원서 접수] ${data.name} (${data.student_id} / ${data.grade})`;
-      const body = `안녕하세요 랩장님,\n\nAIONE LAB 2026학년도 신규 연구원 지원서가 새로 접수되었습니다.\n\n` +
-        `[지원자 기본 정보]\n` +
-        `- 성명: ${data.name}\n` +
-        `- 학번: ${data.student_id}\n` +
-        `- 지원구분: ${data.grade}\n` +
-        `- 연락처: ${data.phone}\n` +
-        `- 접수일시: ${timestamp}\n\n` +
-        `웹사이트 관리자 포털 또는 본 구글 스프레드시트에서 즉시 확인 및 공식 PDF를 발급받으실 수 있습니다.`;
-      
-      MailApp.sendEmail(NOTIFICATION_EMAIL, subject, body);
-    } catch (mailErr) {
-      console.warn("MailApp send warning:", mailErr);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Saved successfully" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  try {
-    const params = e.parameter || {};
-    const action = params.action || "";
-    const pw = params.pw || "";
-    const activePassword = getAdminPassword();
-
-    // 1. 웹사이트에서 관리자 비밀번호 변경 요청 시 (구글 DB 비밀번호 실시간 자동 동기화)
-    if (action === "change_password") {
-      const oldPw = params.old_pw || "";
-      const newPw = params.new_pw || "";
-      if (oldPw !== activePassword && oldPw !== DEFAULT_ADMIN_PASSWORD) {
-        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "기존 비밀번호가 일치하지 않습니다." }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      if (!newPw) {
-        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "새 비밀번호를 입력해주세요." }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      setAdminPassword(newPw);
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "비밀번호가 성공적으로 변경되었습니다." }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // 2. 웹사이트 관리자 포털 지원자 목록 조회 요청 시
-    if (action === "get_applicants") {
-      if (pw !== activePassword && pw !== DEFAULT_ADMIN_PASSWORD) {
-        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "비밀번호가 올바르지 않습니다." }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-
-      const sheet = getOrCreateApplicantSheet();
-      const rows = sheet.getDataRange().getValues();
-      if (rows.length <= 1) {
-        return ContentService.createTextOutput(JSON.stringify({ status: "success", applicants: [] }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-
-      const applicants = [];
-      // 1행은 헤더이므로 2행부터 읽음
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        let rawData = null;
-        try {
-          rawData = row[16] ? JSON.parse(row[16]) : null;
-        } catch (_) {}
-
-        applicants.push({
-          submitted_at: row[0],
-          name: row[1],
-          student_id: String(row[2]),
-          grade: row[3],
-          phone: row[4],
-          military: row[5],
-          keyword_intro: row[6],
-          motivation: row[7],
-          problem_solving: row[8],
-          study_plan: row[9],
-          expectation: row[10],
-          career_plan: row[11],
-          tech_stack: row[12],
-          desired_activities: row[13],
-          interview_available_times: row[14],
-          portfolio_links: row[15],
-          raw_data: rawData
-        });
-      }
-
-      // 최신 접수순으로 역순 정렬
-      applicants.reverse();
-
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", applicants: applicants }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // 3. 웹사이트 관리자 포털 지원서 삭제 요청 시 (구글 시트에서 해당 지원자 행 영구 삭제)
-    if (action === "delete_applicant") {
-      if (pw !== activePassword && pw !== DEFAULT_ADMIN_PASSWORD) {
-        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "비밀번호가 올바르지 않습니다." }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      const studentIdToDelete = String(params.student_id || "");
-      const sheet = getOrCreateApplicantSheet();
-      const rows = sheet.getDataRange().getValues();
-      for (let i = rows.length - 1; i >= 1; i--) {
-        if (String(rows[i][2]) === studentIdToDelete) {
-          sheet.deleteRow(i + 1);
-        }
-      }
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Deleted successfully" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ status: "running", time: new Date() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function getOrCreateApplicantSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("지원자명단");
-  if (!sheet) {
-    sheet = ss.insertSheet("지원자명단");
-    const headers = [
-      "접수일시", "성명", "학번", "지원구분", "연락처", "병역구분",
-      "나를표현하는단어", "지원동기", "문제해결경험", "학업계획",
-      "얻고자하는것", "진로계획", "기술스택", "연구실희망활동",
-      "면접가능시간", "포트폴리오링크", "원본JSON"
-    ];
-    sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length)
-      .setBackground("#0284c7")
-      .setFontColor("#ffffff")
-      .setFontWeight("bold")
-      .setHorizontalAlignment("center");
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
-}
-```
-
-#### [3단계] 웹 앱(Web App) 배포
+#### [3단계] 웹 앱(Web App) 배포 & 권한 승인 (1회)
 1. 우측 상단의 파란색 **[배포] > [새 배포]** 버튼을 클릭합니다.
 2. 좌측 톱니바퀴 아이콘을 눌러 **[웹 앱(Web App)]**을 선택합니다.
-3. 설정을 아래와 같이 입력합니다:
-   - **설명**: `AIONE LAB 지원자 관리 API`
-   - **다음 사용자 권한으로 실행**: **나(사용자 이메일)**
-   - **액세스 권한이 있는 사용자**: **모든 사용자(Anyone)**  *(반드시 Anyone으로 선택해야 웹사이트에서 통신이 가능합니다)*
-4. **[배포]** 버튼을 클릭하고, 구글 계정 권한 승인을 완료합니다.
+3. 설정을 아래와 같이 지정합니다:
+   - **설명**: `AIONE LAB 2026 지원서 자동화 API`
+   - **다음 사용자 권한으로 실행**: **`나(내 계정)`**
+   - **액세스 권한이 있는 사용자**: **`모든 사용자 (Anyone)`** *(반드시 Anyone으로 선택해야 지원자가 로그인 없이 제출할 수 있습니다)*
+4. **[배포]**를 클릭하고, 구글 계정 권한 승인(액세스 권한 검토 ➔ 고급 ➔ 안전하지 않은 페이지로 이동 ➔ 허용)을 완료합니다.
 5. 발급된 **`웹 앱 URL`**(예: `https://script.google.com/macros/s/.../exec`)을 복사합니다.
 
 #### [4단계] 웹사이트에 연동 URL 등록하기 (2가지 방법 중 택1)
 - **방법 A (권장 · 원클릭 등록)**:
-  - 웹사이트 하단 **`[🔒 관리자 포털]`** 열기 -> 비밀번호 `aione2026!` 입력 -> 우측 상단 **`[⚙️ 설정]`** 아이콘 클릭 -> 복사한 URL 붙여넣고 **`[저장]`** 클릭!
+  - 웹사이트 관리자 포털(`Ctrl + Shift + A`) 접속 ➔ 우측 상단 **`[⚙️ 설정]`** 아이콘 클릭 ➔ 복사한 URL 붙여넣고 **`[URL 저장]`** 클릭!
 - **방법 B (코드에 직접 영구 반영)**:
-  - [`js/form.js`](file:///c:/Users/오창현/Desktop/AIONE%20LAB/js/form.js) 상단의 `GOOGLE_APPS_SCRIPT_URL = '여기에_URL_붙여넣기';`에 기입 후 커밋합니다.
+  - [`js/form.js`](file:///c:/Users/오창현/Desktop/AIONE%20LAB/js/form.js) 상단의 `const GAS_WEBAPP_URL = "여기에_URL_붙여넣기";`에 기입 후 저장합니다.
 
 ---
 
