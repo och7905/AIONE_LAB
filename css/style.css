@@ -68,6 +68,7 @@ html.light {
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 85px;
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -569,4 +570,79 @@ html.light .select-pill:hover {
   background: rgba(2, 132, 199, 0.08);
   border-color: #0284c7;
   color: #0284c7;
+}
+
+/* --------------------------------------------------------------------------
+   Side Navigation Drawer (Off-Canvas Sidebar)
+   -------------------------------------------------------------------------- */
+.side-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(3, 7, 18, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.side-drawer-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.side-drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  z-index: 10000;
+  overflow-y: auto;
+}
+
+.side-drawer-backdrop.is-open .side-drawer-panel {
+  transform: translateX(0);
+}
+
+html.light .side-drawer-panel {
+  background: #ffffff;
+  border-left-color: #e2e8f0;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+}
+
+.side-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.side-nav-link:hover {
+  color: #ffffff;
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.25);
+  transform: translateX(4px);
+}
+
+html.light .side-nav-link:hover {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.25);
 }

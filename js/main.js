@@ -1,9 +1,40 @@
 /**
  * AIONE LAB - Main Controller
- * Handles Theme Toggle, Navigation, Toast Notifications, and Modals
+ * Handles Theme Toggle, Navigation, Scroll Control, Toast Notifications, and Modals
  */
 
 (function () {
+  // --------------------------------------------------------------------------
+  // 0. Page Start Position: Force Top on Initial Load (Zero Scroll Offset)
+  // --------------------------------------------------------------------------
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
+  function forceScrollToTop() {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }
+
+  // Execute immediately to prevent any previous scroll restoration
+  forceScrollToTop();
+
+  // If a hash like #apply exists on direct entry/refresh, clear it to start at the top
+  if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    forceScrollToTop();
+  });
+
+  window.addEventListener('load', () => {
+    forceScrollToTop();
+    setTimeout(forceScrollToTop, 20);
+    setTimeout(forceScrollToTop, 100);
+  });
+
   // --------------------------------------------------------------------------
   // 1. Theme Toggle (Dark / Light)
   // --------------------------------------------------------------------------
@@ -50,27 +81,105 @@
   initTheme();
 
   // --------------------------------------------------------------------------
-  // 2. Mobile Menu Navigation
+  // 2. Off-Canvas Sidebar Navigation Drawer (사이드 토글 메뉴)
   // --------------------------------------------------------------------------
-  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-  const mobileNavMenu = document.getElementById('mobile-nav');
+  const sideDrawer = document.getElementById('side-drawer');
+  const sideDrawerOpenBtn = document.getElementById('side-drawer-open-btn');
+  const sideDrawerCloseBtn = document.getElementById('side-drawer-close-btn');
 
-  if (mobileMenuBtn && mobileNavMenu) {
-    mobileMenuBtn.addEventListener('click', () => {
-      const isExpanded = mobileNavMenu.classList.toggle('hidden');
-      mobileMenuBtn.setAttribute('aria-expanded', !isExpanded);
+  function openSideDrawer() {
+    if (sideDrawer) {
+      sideDrawer.classList.add('is-open');
+      sideDrawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeSideDrawer() {
+    if (sideDrawer) {
+      sideDrawer.classList.remove('is-open');
+      sideDrawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  }
+
+  if (sideDrawerOpenBtn) {
+    sideDrawerOpenBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSideDrawer();
+    });
+  }
+
+  if (sideDrawerCloseBtn) {
+    sideDrawerCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSideDrawer();
+    });
+  }
+
+  // Backdrop click to close drawer
+  if (sideDrawer) {
+    sideDrawer.addEventListener('click', (e) => {
+      if (e.target === sideDrawer) {
+        closeSideDrawer();
+      }
+    });
+  }
+
+  // Close on ESC key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sideDrawer?.classList.contains('is-open')) {
+      closeSideDrawer();
+    }
+  });
+
+  // Smooth scroll for all anchor navigation links & auto close drawer
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      const targetId = this.getAttribute('href');
+      closeSideDrawer();
+
+      if (targetId === '#') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      const targetEl = document.querySelector(targetId);
+      if (targetEl) {
+        e.preventDefault();
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, '', targetId);
+      }
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 3. Floating Quick Navigation (Scroll-to-Top Button)
+  // --------------------------------------------------------------------------
+  const scrollTopBtn = document.getElementById('scroll-to-top');
+  if (scrollTopBtn) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 280) {
+        scrollTopBtn.classList.remove('opacity-0', 'pointer-events-none');
+        scrollTopBtn.classList.add('opacity-100', 'pointer-events-auto');
+      } else {
+        scrollTopBtn.classList.add('opacity-0', 'pointer-events-none');
+        scrollTopBtn.classList.remove('opacity-100', 'pointer-events-auto');
+      }
     });
 
-    // Close menu when clicking on nav link
-    mobileNavMenu.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        mobileNavMenu.classList.add('hidden');
+    scrollTopBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
       });
     });
   }
 
   // --------------------------------------------------------------------------
-  // 3. Toast Notifications
+  // 4. Toast Notifications
   // --------------------------------------------------------------------------
   const toastContainer = document.getElementById('toast-container');
 
@@ -98,7 +207,7 @@
   };
 
   // --------------------------------------------------------------------------
-  // 4. Modal Handlers
+  // 5. Modal Handlers
   // --------------------------------------------------------------------------
   const modals = document.querySelectorAll('.modal-backdrop');
 
@@ -135,7 +244,7 @@
   });
 
   // --------------------------------------------------------------------------
-  // 5. Copy-to-Clipboard Helpers
+  // 6. Copy-to-Clipboard Helpers
   // --------------------------------------------------------------------------
   document.querySelectorAll('[data-copy]').forEach(button => {
     button.addEventListener('click', async (e) => {
@@ -160,7 +269,7 @@
   });
 
   // --------------------------------------------------------------------------
-  // 6. Header Glow & Scroll Spy
+  // 7. Header Glow on Scroll
   // --------------------------------------------------------------------------
   const header = document.querySelector('header');
   window.addEventListener('scroll', () => {

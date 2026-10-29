@@ -8,6 +8,7 @@
 </p>
 
 ![AIONE LAB Preview](https://img.shields.io/badge/AIONE_LAB-2026_Recruitment-0284c7?style=for-the-badge&logo=openai&logoColor=white)
+![OpenChat](https://img.shields.io/badge/KakaoTalk-오픈채팅_문의-FEE500?style=for-the-badge&logo=kakaotalk&logoColor=black)
 ![Tech](https://img.shields.io/badge/HTML5-CSS3-JavaScript_SPA-38bdf8?style=for-the-badge&logo=javascript&logoColor=white)
 ![PDF Generation](https://img.shields.io/badge/PDF_Engine-html2pdf.js-e11d48?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
 ![GPU Cluster](https://img.shields.io/badge/GPU_Cluster-RTX_Blackwell_96GB-f59e0b?style=for-the-badge&logo=nvidia&logoColor=white)
@@ -27,8 +28,14 @@
 - **신경망 입자 인터랙션 (`canvas.js`)**: 마우스 커서 및 터치에 반응하며 유기적으로 연결되는 노드-에지 신경망 시뮬레이션 (60fps)
 - **글래스모피즘 & 사이버 랙 UI**: 고해상도 글래스모피즘(Backdrop Blur) 및 실시간 작동 램프(Online Pulse)가 적용된 서버 스펙 카드
 - **다크 / 라이트 모드 완벽 지원**: 사용자 OS 환경 감지 및 수동 토글 지원, 로컬 스토리지에 테마 상태 저장
+- **사이드 토글 네비게이션 드로어 (Off-Canvas Sidebar) & 플로팅 퀵 컨트롤**: 
+  - 상단 헤더 우측의 **[MENU ☰]** 버튼 클릭 시 우측에서 스르륵 열리는 프리미엄 사이드 드로어 메뉴 (홈, 소개, 서버 스펙, 연구진, 지원 혜택, 2026 지원서 작성, 문의 오픈채팅방, 공식 사이트)
+  - 딤 배경(Backdrop Blur) 클릭, 닫기 버튼(✕), ESC 키, 메뉴 링크 클릭 시 부드러운 스크롤 이동 및 자동 닫힘
+  - 스크롤 시 우측 하단에 나타나는 원클릭 **[▲ TOP]** 플로팅 네비게이션 버튼
+  - 브라우저 스크롤 복원 간섭을 배제하고 링크 접속 시 **항상 최상단(메인 엠블럼·히어로)에서 깔끔하게 시작**하도록 보장하는 스마트 스크롤 제어 로직 탑재
 
 ### 2. 연구실 공식 링크 및 대외 연동
+- **AIONE LAB 문의 오픈채팅방**: [https://open.kakao.com/o/gHO1VCMi](https://open.kakao.com/o/gHO1VCMi) (지원서 작성 및 연구실 활동 실시간 Q&A)
 - **연구실 공식 Google Site**: [https://sites.google.com/view/aionelab/education?authuser=0](https://sites.google.com/view/aionelab/education?authuser=0)
 - **논문/특허 실적 확인**: [https://sites.google.com/view/aionelab/publications?authuser=0](https://sites.google.com/view/aionelab/publications?authuser=0)
 - **랩장 개인 포트폴리오**: [https://och7905.github.io/Personal_Website_Deployment/](https://och7905.github.io/Personal_Website_Deployment/)
@@ -118,12 +125,12 @@
 
 ```
 AIONE LAB/
-├── index.html              # 메인 SPA 웹페이지 (신경망 캔버스, 서버스펙, 연구진, 지원서, PDF 템플릿)
+├── index.html              # 메인 SPA 웹페이지 (신경망 캔버스, 서버스펙, 연구진, 지원서, 사이드 드로어, PDF 템플릿)
 ├── css/
-│   └── style.css           # 글래스모피즘, 네온 인터랙션, 다크/라이트 테마, 선택 블록 스타일
+│   └── style.css           # 글래스모피즘, 사이드 드로어, 네온 인터랙션, 다크/라이트 테마, 선택 블록 스타일
 ├── js/
 │   ├── canvas.js           # 인터랙티브 신경망 입자 캔버스 (60fps)
-│   ├── main.js             # 테마 토글, 모바일 네비게이션, 토스트 알림, 모달 제어
+│   ├── main.js             # 사이드 토글 네비게이션 드로어, 최상단 시작 스크롤 제어, 테마 토글, 모달 제어
 │   └── form.js             # 지원서 검증, PDF 실시간 생성/다운로드, Formspree & GAS 메일 연동
 ├── assets/
 │   └── logo.png            # AIONE LAB 공식 엠블럼 고해상도 로고
@@ -200,3 +207,5 @@ function doPost(e) {
   - 이메일: [och7905@naver.com](mailto:och7905@naver.com)
   - 연락처: 010-9347-7906
   - 개인 웹사이트: [https://och7905.github.io/Personal_Website_Deployment/](https://och7905.github.io/Personal_Website_Deployment/)
+- **실시간 문의**:
+  - **AIONE LAB 문의 오픈채팅방**: [https://open.kakao.com/o/gHO1VCMi](https://open.kakao.com/o/gHO1VCMi) (지원서 작성 및 연구실 관련 실시간 Q&A)
