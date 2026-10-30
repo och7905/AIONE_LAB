@@ -1436,26 +1436,32 @@
             </div>
           </div>
 
-          <!-- Quick Navigation Links -->
-          <div class="flex flex-wrap items-center justify-center gap-6 text-slate-300">
-            <a href="#about" class="hover:text-sky-400 transition-colors">연구실 소개</a>
-            <a href="#servers" class="hover:text-sky-400 transition-colors">서버 스펙</a>
-            <a href="#members" class="hover:text-sky-400 transition-colors">연구진</a>
-            <a href="#benefits" class="hover:text-sky-400 transition-colors">지원 혜택</a>
-            <a href="#apply" class="hover:text-sky-400 transition-colors">지원서 작성</a>
-            <a href="https://sites.google.com/view/aionelab/publications?authuser=0" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">
-              논문·특허 실적 ↗
-            </a>
-            <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline">
-              공식 Google Site ↗
-            </a>
-            <a href="https://och7905.github.io/Personal_Website_Deployment/" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">
-              랩장 포트폴리오 ↗
-            </a>
-            <a href="https://open.kakao.com/o/gHO1VCMi" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:underline flex items-center gap-1 font-semibold">
-              <i class="fa-solid fa-comments text-xs"></i>
-              <span>문의 오픈채팅방 ↗</span>
-            </a>
+          <!-- Quick Navigation Links (2-Tier Hierarchy) -->
+          <div class="flex flex-col items-center md:items-end gap-2.5">
+            <!-- Tier 1: Main Section Links -->
+            <div class="flex flex-wrap items-center justify-center md:justify-end gap-5 sm:gap-6 text-slate-300 font-medium">
+              <a href="#about" class="hover:text-sky-400 transition-colors">연구실 소개</a>
+              <a href="#servers" class="hover:text-sky-400 transition-colors">서버 스펙</a>
+              <a href="#members" class="hover:text-sky-400 transition-colors">연구진</a>
+              <a href="#benefits" class="hover:text-sky-400 transition-colors">지원 혜택</a>
+              <a href="#apply" class="hover:text-sky-400 transition-colors">지원서 작성</a>
+            </div>
+            <!-- Tier 2: External Resources & Chat Links -->
+            <div class="flex flex-wrap items-center justify-center md:justify-end gap-4 sm:gap-5 text-[11.5px]">
+              <a href="https://sites.google.com/view/aionelab/publications?authuser=0" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">
+                논문·특허 실적 ↗
+              </a>
+              <a href="https://sites.google.com/view/aionelab/education?authuser=0" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline">
+                공식 Google Site ↗
+              </a>
+              <a href="https://och7905.github.io/Personal_Website_Deployment/" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">
+                랩장 포트폴리오 ↗
+              </a>
+              <a href="https://open.kakao.com/o/gHO1VCMi" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:underline flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-comments text-xs"></i>
+                <span>문의 오픈채팅방 ↗</span>
+              </a>
+            </div>
           </div>
 
         </div>
@@ -1463,8 +1469,7 @@
         <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-slate-400">
           <p>© 2026 AIONE LAB. All Rights Reserved. 대전광역시 동구 대학로 62 대전대학교 서문 방면 융합과학관 217호 &amp; 330호</p>
           <p class="font-mono text-[11px] flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <span>Lab Leader: <a href="mailto:och7905@naver.com" class="hover:text-sky-400 underline">och7905@naver.com</a> / 010-9347-7906 · 
-            <a href="https://open.kakao.com/o/gHO1VCMi" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:underline font-sans">문의 오픈채팅방 ↗</a></span>
+            <span>Lab Leader: <a href="mailto:och7905@naver.com" class="hover:text-sky-400 underline">och7905@naver.com</a> / 010-9347-7906</span>
             <span class="text-slate-600 hidden sm:inline">|</span>
             <button id="admin-portal-open-btn" type="button" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 hover:bg-sky-500/20 border border-white/10 hover:border-sky-400/40 text-slate-400 hover:text-sky-300 transition-all font-sans text-[11px] focus:outline-none" title="관리자 전용 포털 (단축키: Ctrl + Shift + A)">
               <i class="fa-solid fa-shield-halved text-[10px] text-sky-400"></i>
